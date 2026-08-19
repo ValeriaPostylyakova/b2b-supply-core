@@ -21,6 +21,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django.contrib.postgres',
 ]
 
 THIRD_PARTY_APPS = [
@@ -30,7 +31,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
 ]
 
-LOCAL_APPS: list[str] = []
+LOCAL_APPS: list[str] = ['apps.accounts', 'apps.catalog', 'apps.inventory', 'apps.orders', 'apps.documents']
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -107,7 +108,7 @@ STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", default="staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# AUTH_USER_MODEL = 'authentication.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
