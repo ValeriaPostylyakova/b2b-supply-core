@@ -31,7 +31,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
 ]
 
-LOCAL_APPS: list[str] = ['apps.accounts', 'apps.catalog', 'apps.inventory', 'apps.orders', 'apps.documents']
+LOCAL_APPS: list[str] = ['apps.accounts', 'apps.catalog', 'apps.inventory', 'apps.orders', 'apps.documents', 'apps.common']
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -125,8 +125,10 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_RENDERER_CLASSES": [
+        "apps.common.renderers.ApiJSONRenderer",
         "rest_framework.renderers.JSONRenderer",
     ],
+    'EXCEPTION_HANDLER': 'apps.common.exceptions.api_exception_handler',
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
         "rest_framework.parsers.MultiPartParser",
@@ -153,6 +155,7 @@ SIMPLE_JWT = {
     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
+    "AUTH_COOKIE": "refresh_token",
 }
 
 SECURE_BROWSER_XSS_FILTER = True

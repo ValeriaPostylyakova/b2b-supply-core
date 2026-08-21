@@ -28,20 +28,18 @@ class Organization(models.Model):
 
 class User(AbstractUser):
     class Roles(models.TextChoices):
-        SUPPLIER = 'SUPPLIER', 'Поставщик'
-        BUYER = 'BUYER', 'Покупатель'
-        ADMIN = 'admin', 'Администратор'
+        SUPPLIER_ADMIN = 'SUPPLIER_ADMIN', 'Администратор организации-поставщика'
+        SUPPLIER_MANAGER = 'SUPPLIER_MANAGER', 'Менеджер поставщика'
+        WAREHOUSE_MANAGER = 'WAREHOUSE_MANAGER', 'Сотрудник склада'
+        BUYER_ADMIN = 'BUYER_ADMIN', 'Администратор организации-покупателя'
+        BUYER_MANAGER = 'BUYER_MANAGER', 'Менеджер по закупкам'
 
-    username = None
     external_id = models.UUIDField(
         default=uuid.uuid4,
         editable=False,
         unique=True,
     )
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=255)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
     role = models.CharField(
         max_length=150,
         choices=Roles.choices,
@@ -51,11 +49,14 @@ class User(AbstractUser):
         Organization,
         on_delete=models.PROTECT,
         related_name="users",
+        null=True,
+        blank=True
     )
-    is_active = models.BooleanField(default=True)
+
+    username = models.CharField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'username']
 
     def __str__(self):
         return self.email
