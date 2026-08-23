@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import render
 from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -7,9 +6,13 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from apps.accounts.permissions import  IsOrganizationAdmin
-from apps.accounts.serializers import CustomTokenObtainPairSerializer, UserDetailSerializer, UsersViewSetSerializer, \
-    UsersViewSetCreateSerializer
+from apps.accounts.permissions import IsOrganizationAdmin
+from apps.accounts.serializers import (
+    CustomTokenObtainPairSerializer,
+    UserDetailSerializer,
+    UsersViewSetCreateSerializer,
+    UsersViewSetSerializer,
+)
 from config import settings
 
 User = get_user_model()
@@ -63,11 +66,9 @@ class UsersViewSet(ModelViewSet):
             return UsersViewSetCreateSerializer
         return UsersViewSetSerializer
 
-    def destroy(self, request: Request, *args, **kwargs) -> Response:
-        instance = self.get_object()
+    def perform_destroy(self, instance: User) -> None:
         instance.is_active = False
         instance.save()
-        return Response(data=None, status=status.HTTP_204_NO_CONTENT)
 
 
 

@@ -3,6 +3,7 @@ import uuid
 from django.core.validators import MinValueValidator
 from django.db import models
 
+
 class Order(models.Model):
     class StatusChoices(models.TextChoices):
         DRAFT = 'DRAFT', 'Черновик'
@@ -63,7 +64,7 @@ class OrderItem(models.Model):
         related_name="order_items",
     )
     warehouse = models.ForeignKey(
-        'inventory.Warehouse',
+        'catalog.Warehouse',
         on_delete=models.PROTECT,
         related_name="order_items",
     )
@@ -82,7 +83,7 @@ class Reservation(models.Model):
         EXPIRED = 'EXPIRED', 'Просрочена'
 
     order = models.ForeignKey('orders.Order', on_delete=models.CASCADE, related_name='reservations')
-    stock = models.ForeignKey('inventory.Stock', on_delete=models.PROTECT, related_name='reservations')
+    stock = models.ForeignKey('catalog.Stock', on_delete=models.PROTECT, related_name='reservations')
     quantity = models.PositiveIntegerField()
     status = models.CharField(
         max_length=20,

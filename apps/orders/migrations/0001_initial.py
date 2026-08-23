@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ("accounts", "0001_initial"),
         ("catalog", "0002_initial"),
-        ("inventory", "0001_initial"),
     ]
 
     operations = [
@@ -119,7 +118,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.PROTECT,
                         related_name="order_items",
-                        to="inventory.warehouse",
+                        to="catalog.warehouse",
                     ),
                 ),
             ],
@@ -165,7 +164,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.PROTECT,
                         related_name="reservations",
-                        to="inventory.stock",
+                        to="catalog.stock",
                     ),
                 ),
             ],

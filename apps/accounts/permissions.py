@@ -1,4 +1,5 @@
-from typing import Any, Set
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
@@ -9,7 +10,7 @@ User = get_user_model()
 
 class IsOrganizationAdmin(BasePermission):
     message: str = "У вас нет прав для выполнения этого действия."
-    ALLOWED_ROLES: Set[str] = {'SUPPLIER_ADMIN', "BUYER_ADMIN"}
+    ALLOWED_ROLES: set[str] = {'SUPPLIER_ADMIN', "BUYER_ADMIN"}
 
     def has_permission(self, request: Request, view: APIView) -> bool:
         user = request.user

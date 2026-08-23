@@ -1,6 +1,6 @@
 import uuid
+
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -21,6 +21,7 @@ class Organization(models.Model):
         verbose_name='Тип организации'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    objects: models.Manager['Organization']
 
     def __str__(self):
         return self.name
@@ -56,7 +57,8 @@ class User(AbstractUser):
     username = models.CharField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'username']
+    REQUIRED_FIELDS = ["first_name", "last_name", "username"]
+    objects: models.Manager['User']
 
     def __str__(self):
         return self.email

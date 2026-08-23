@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class FileDocument(models.Model):
     class DocumentType(models.TextChoices):
         INVOICE = "INVOICE", "Invoice"

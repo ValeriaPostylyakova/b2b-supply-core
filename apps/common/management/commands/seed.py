@@ -1,15 +1,9 @@
-import random
 from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-from faker import Faker
-from apps.accounts.models import Organization
-
-User = get_user_model()
-fake = Faker(['ru_RU'])
-
+from django.db import transaction
+from ._seeders import clean_old_data, seed_base_data, seed_products_and_warehouses, seed_stocks
 
 class Command(BaseCommand):
-    help = 'Заполняет базу данных реалистичными тестовыми данными'
+    help = 'Заполняет БД тестовыми данными: Организации, Пользователи, Продукты, Склады и Остатки'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -23,69 +17,29 @@ class Command(BaseCommand):
         org_count = options['orgs']
 
         self.stdout.write(self.style.WARNING('Очистка старых тестовых данных...'))
-        User.objects.filter(email__endswith='@example.com').delete()
-        Organization.objects.filter(name__endswith=' (Тест)').delete()
+        clean_old_data()
 
-        self.stdout.write(self.style.SUCCESS('Начало генерации данных...'))
+        self.stdout.write(self.style.WARNING('Начало генерации данных...'))
 
-        suppliers = []
-        buyers = []
+        try:
+            with transaction.atomic():
+                suppliers = seed_base_data(org_count)
+                self.stdout.write(self.style.SUCCESS(
+                    f'Шаг 1 завершен: {org_count * 2} организаций и пользователи созданы.'
+                ))
 
-        for _ in range(org_count):
-            supplier = Organization.objects.create(
-                name=f"ООО {fake.company()} (Тест)",
-                type=Organization.Types.SUPPLIER
-            )
-            suppliers.append(supplier)
+                products, warehouses = seed_products_and_warehouses(suppliers)
+                self.stdout.write(self.style.SUCCESS(
+                    f'Шаг 2 завершен: Создано {len(products)} продуктов и {len(warehouses)} складов.'
+                ))
 
-            buyer = Organization.objects.create(
-                name=f"ИП {fake.company()} (Тест)",
-                type=Organization.Types.BUYER
-            )
-            buyers.append(buyer)
+                stocks_count = seed_stocks(products, warehouses)
+                self.stdout.write(self.style.SUCCESS(
+                    f'Шаг 3 завершен: Распределено {stocks_count} записей остатков по складам.'
+                ))
 
-        for org in suppliers:
-            User.objects.create_user(
-                email=fake.unique.email(domain='example.com'),
-                username=fake.unique.user_name(),
-                password='password123',
-                first_name=fake.first_name_male(),
-                last_name=fake.last_name_male(),
-                role=User.Roles.SUPPLIER_ADMIN,
-                organization=org
-            )
-            for _ in range(random.randint(1, 3)):
-                User.objects.create_user(
-                    email=fake.unique.email(domain='example.com'),
-                    username=fake.unique.user_name(),
-                    password='password123',
-                    first_name=fake.first_name(),
-                    last_name=fake.last_name(),
-                    role=User.Roles.SUPPLIER_MANAGER,
-                    organization=org
-                )
+            self.stdout.write(self.style.SUCCESS('🎉 Сидирование успешно завершено! Все связи соблюдены.'))
 
-        for org in buyers:
-            User.objects.create_user(
-                email=fake.unique.email(domain='example.com'),
-                username=fake.unique.user_name(),
-                password='password123',
-                first_name=fake.first_name_female(),
-                last_name=fake.last_name_female(),
-                role=User.Roles.BUYER_ADMIN,
-                organization=org
-            )
-
-            User.objects.create_user(
-                email=fake.unique.email(domain='example.com'),
-                username=fake.unique.user_name(),
-                password='password123',
-                first_name=fake.first_name(),
-                last_name=fake.last_name(),
-                role=User.Roles.BUYER_MANAGER,
-                organization=org
-            )
-
-        self.stdout.write(self.style.SUCCESS(
-            f'Готово! Создано {org_count * 2} организаций и связанные пользователи.'
-        ))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'❌ Ошибка при генерации данных: {e}'))
+            self.stdout.write(self.style.ERROR('База данных автоматически откачена к исходному состоянию.'))
