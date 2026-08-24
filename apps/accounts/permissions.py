@@ -25,3 +25,17 @@ class IsOrganizationAdmin(BasePermission):
         if not isinstance(user, User):
             return False
         return getattr(obj, 'organization', None) == user.organization
+
+class BaseOrganizationPermission(BasePermission):
+    role_name: str = None
+    org_field: str = 'organization'
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        assert self.role_name is not None, "Укажите 'role_name' в вашем классе прав"
+        user = request.user
+        return bool(user and user.is_authenticated and getattr(user, 'role', None) == self.role_name)
+
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
+        user = request.user
+        obj_org = getattr(obj, self.org_field, None)
+        return bool(obj_org and obj_org == getattr(user, 'organization', None))

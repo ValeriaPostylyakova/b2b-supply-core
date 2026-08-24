@@ -1,36 +1,31 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import F
-from rest_framework import permissions, generics
+from rest_framework import permissions, generics, status
+from rest_framework.response import Response
 
-from apps.catalog.models import Product
+from apps.catalog.models import Product, Stock
 from apps.catalog.paginations import ProductNumberPagination
+from apps.catalog.permissions import IsSupplierAdminOwner, IsSupplerManagerOwner
 from apps.catalog.serializers import (
-    ProductListSupplierSerializer,
-    ProductListBuyerSerializer,
     ProductFilter,
+    ProductListSerializer,
+    ProductListDetailSerializer,
+    ProductCreateSerializer,
+    ProductUpdateSerializer,
 )
 
 User = get_user_model()
 
 
-from django.db.models import Sum, Value
+from django.db.models import Sum, Value, F, Prefetch
 from django.db.models.functions import Coalesce
 
-class ProductListGenericAPIView(generics.ListAPIView):
-    queryset = Product.objects.select_related('supplier')
+class ProductListAPIView(generics.ListAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductListSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_class = ProductFilter
     pagination_class = ProductNumberPagination
-
-    def get_serializer_class(self):
-        user_role = getattr(self.request.user, "role", "")
-        is_supplier_user_role = isinstance(user_role, str) and user_role.startswith(
-            "SUPPLIER_"
-        )
-        if is_supplier_user_role:
-            return ProductListSupplierSerializer
-        return ProductListBuyerSerializer
 
     def get_queryset(self):
         queryset = self.queryset.all()
@@ -71,8 +66,67 @@ class ProductListGenericAPIView(generics.ListAPIView):
         return queryset
 
 
+class ProductRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProductListDetailSerializer
 
+    lookup_field = 'external_id'
 
+    def get_queryset(self):
+        queryset = self.queryset.all()
+        user = self.request.user
+        user_role = getattr(user, "role", "")
+        is_supplier_user_role = isinstance(user_role, str) and user_role.startswith(
+            "SUPPLIER_"
+        )
 
+        if is_supplier_user_role and hasattr(user, "organization") and user.organization:
+            queryset = queryset.filter(supplier=user.organization)
+            queryset = queryset.prefetch_related(
+                Prefetch("stocks",
+                    queryset=Stock.objects.filter(
+                    warehouse__supplier=user.organization
+                ).select_related('warehouse'))
+            )
+        else:
+            queryset = queryset.prefetch_related(
+                Prefetch("stocks", queryset=Stock.objects.all().select_related('warehouse'))
+            )
 
+        return queryset
 
+class ProductCreateAPIView(generics.CreateAPIView):
+    queryset = Product.objects.all().select_related('supplier')
+    serializer_class = ProductCreateSerializer
+    permission_classes = [permissions.IsAuthenticated & (IsSupplierAdminOwner | IsSupplerManagerOwner)]
+
+class ProductUpdateAPIView(generics.UpdateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated & (IsSupplierAdminOwner | IsSupplerManagerOwner)]
+    lookup_field = 'external_id'
+
+class ProductDestroyAPIView(generics.DestroyAPIView):
+    queryset = Product.objects.all()
+    permission_classes = [
+        permissions.IsAuthenticated & (IsSupplierAdminOwner | IsSupplerManagerOwner)
+    ]
+    lookup_field = "external_id"
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if not instance.is_active:
+            return Response(
+                {"detail": "Товар уже деактивирован."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        instance.is_active = False
+        instance.save()
+
+        return Response(
+            {"detail": "Товар успешно деактивирован."},
+            status=status.HTTP_200_OK
+        )

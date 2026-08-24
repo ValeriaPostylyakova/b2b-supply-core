@@ -15,7 +15,7 @@ class Product(models.Model):
         editable=False,
         unique=True,
     )
-    sku = models.CharField(max_length=100, unique=True)
+    sku = models.CharField(max_length=100)
     name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()
@@ -35,10 +35,15 @@ class Product(models.Model):
         related_name="products",
     )
 
-    objects: models.Manager['Product']
-
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sku", "supplier"],
+                name="unique_sku_per_supplier"
+            )
+        ]
         indexes = [
+            models.Index(fields=["sku"], name="idx_product_sku"),
             models.Index(fields=["price"], name="idx_product_price"),
             models.Index(fields=["is_active", "price"], name="idx_product_active_price"),
             GinIndex(
@@ -51,6 +56,11 @@ class Product(models.Model):
         return f"{self.sku} - {self.name}"
 
 class Warehouse(models.Model):
+    external_id = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
     name = models.CharField(max_length=150, unique=True)
     address = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
