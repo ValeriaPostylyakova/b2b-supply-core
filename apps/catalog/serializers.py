@@ -12,31 +12,89 @@ User = get_user_model()
 
 
 class RoleFieldsMixin:
-    supplier_fields = set()
-    buyer_fields = set()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+
+        if not request or not request.user:
+            return data
+
+        user = request.user
+
+        supplier_fields = getattr(self, "supplier_fields", set())
+        buyer_fields = getattr(self, "buyer_fields", set())
+
+        all_role_fields = supplier_fields | buyer_fields
+        allowed_fields = supplier_fields if user.is_supplier else buyer_fields
+
+        fields_to_remove = all_role_fields - allowed_fields
+        for field in fields_to_remove:
+            data.pop(field, None)
+
+        return data
+
+
+class WarehouseListSerializer(RoleFieldsMixin, serializers.ModelSerializer):
+    id = serializers.UUIDField(source="external_id", read_only=True)
+    products_count = serializers.IntegerField(read_only=True)
+    supplier = serializers.SlugRelatedField(slug_field="name", read_only=True)
+
+    supplier_fields = {"products_count", 'created_at', 'updated_at', 'is_active'}
+    buyer_fields = {'supplier'}
+    class Meta:
+        model = Warehouse
+        fields = ['id', 'name', 'address', 'is_active', 'created_at', 'updated_at', 'products_count', 'supplier']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class WarehouseCreateUpdateSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source="external_id", read_only=True)
+    supplier = serializers.SlugRelatedField(slug_field="name", read_only=True)
+    class Meta:
+        model = Warehouse
+        fields = ["id", "name", "address", "supplier", "is_active", "created_at", "updated_at"]
+        read_only_fields = ["id", "supplier", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if not request or not request.user:
+            raise serializers.ValidationError("Ошибка контекста запроса")
+
+        user = request.user
+        if not self.instance:
+            if "is_active" in attrs:
+                raise serializers.ValidationError("Поле is_active не может быть указано при создании склада")
+            attrs["supplier"] = user.organization
+        return attrs
+
+class WarehouseFilter(django_filters.rest_framework.FilterSet):
+    search = django_filters.CharFilter(method='filter_search', label='Поиск')
+    ordering = django_filters.OrderingFilter(
+        fields=[
+            "name",
+            "created_at",
+        ],
+        field_labels={"name": "Название", "created_at": "Дата создания"},
+    )
+
+    class Meta:
+        model = Warehouse
+        fields = ['search', 'ordering', 'is_active']
+
+    def filter_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(Q(name__icontains=value) | Q(supplier__name__icontains=value)).distinct()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        request = self.request
+        if not request or not request.user:
+            return
 
-        request = self.context.get("request")
-        if request and request.user:
-            user_role = getattr(request.user, "role", "")
-            is_supplier = isinstance(user_role, str) and user_role.startswith("SUPPLIER_")
-
-            role_specific_fields = (
-                self.supplier_fields if is_supplier else self.buyer_fields
-            )
-            allowed_fields = set(self.Meta.fields) | role_specific_fields
-
-            for field_name in list(self.fields.keys()):
-                if field_name not in allowed_fields:
-                    self.fields.pop(field_name)
-
-
-class WarehouseListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Warehouse
-        fields = ['name', 'address',]
+        user = request.user
+        if not user.is_supplier:
+            self.filters.pop("is_active", None)
 
 class ProductListSerializer(RoleFieldsMixin, serializers.ModelSerializer):
     id = serializers.UUIDField(source='external_id', read_only=True)
@@ -82,24 +140,6 @@ class ProductWarehouseListSerializer(serializers.ModelSerializer):
     def get_available_quantity(self, obj):
         return max(0, obj.quantity - obj.reserved_quantity)
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        request = self.context.get("request")
-        if not request or not request.user:
-            return data
-
-        user = request.user
-        user_role = getattr(user, "role", "")
-        is_supplier = isinstance(user_role, str) and user_role.startswith("SUPPLIER_")
-
-        all_role_fields = self.supplier_fields | self.buyer_fields
-        allowed_fields = self.supplier_fields if is_supplier else self.buyer_fields
-        fields_to_remove = all_role_fields - allowed_fields
-        for field in fields_to_remove:
-            data.pop(field, None)
-
-        return data
-
 
 
 class ProductListDetailSerializer(ProductListSerializer):
@@ -124,11 +164,16 @@ class ProductFilter(django_filters.rest_framework.FilterSet):
     available = django_filters.BooleanFilter(field_name='is_active', label='Доступен')
 
     ordering = django_filters.OrderingFilter(
-        fields=(
-            ("price", "price"),
-            ("created_at", "created_at"),
-            ("name", "name"),
-        )
+        fields=[
+            'price',
+            'created_at',
+            'name'
+        ],
+        field_labels={
+            'price': 'Цена',
+            'created_at': 'Дата создания',
+            'name': 'Название'
+        }
     )
 
     class Meta:

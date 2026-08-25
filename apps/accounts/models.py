@@ -63,3 +63,19 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
+    @property
+    def is_supplier(self):
+        return bool(self.role.startswith("SUPPLIER_"))
+
+    @property
+    def is_buyer(self):
+        return bool(self.role.startswith("BUYER_"))
+
+    @property
+    def is_warehouse(self):
+        return bool(self.role.startswith("WAREHOUSE_"))
+
+    @property
+    def has_organization(self):
+        return bool(self.organization_id)
+
