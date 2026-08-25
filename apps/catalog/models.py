@@ -117,3 +117,7 @@ class Stock(models.Model):
     def __str__(self):
         return f"{self.product.name} в {self.warehouse.name}: {self.quantity}"
 
+    @property
+    def supplier(self):
+        return self.warehouse.supplier if self.warehouse else None
+

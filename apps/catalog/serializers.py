@@ -53,18 +53,12 @@ class WarehouseCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Warehouse
         fields = ["id", "name", "address", "supplier", "is_active", "created_at", "updated_at"]
-        read_only_fields = ["id", "supplier", "created_at", "updated_at"]
+        read_only_fields = WarehouseListSerializer.Meta.read_only_fields + ['supplier']
 
     def validate(self, attrs):
-        request = self.context.get("request")
-        if not request or not request.user:
-            raise serializers.ValidationError("Ошибка контекста запроса")
-
-        user = request.user
         if not self.instance:
             if "is_active" in attrs:
                 raise serializers.ValidationError("Поле is_active не может быть указано при создании склада")
-            attrs["supplier"] = user.organization
         return attrs
 
 class WarehouseFilter(django_filters.rest_framework.FilterSet):
@@ -203,16 +197,6 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id','sku', 'name', 'price', 'description', 'supplier']
 
-    def validate(self, attrs):
-        request = self.context.get('request')
-        if not request or not request.user:
-            raise serializers.ValidationError("Ошибка контекста запроса")
-
-        current_user_organization = getattr(request.user, "organization", None)
-        attrs['supplier'] = current_user_organization
-
-        return attrs
-
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source='external_id', read_only=True)
@@ -227,4 +211,46 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Product
-        fields = ['id', 'name', 'price', 'description']
+        fields = ["id", "name", "price", "description"]
+
+class ProductStockSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source='external_id', read_only=True)
+    class Meta:
+        model = Product
+        fields = ["id", "sku", "name"]
+
+
+class WarehouseStockSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source="external_id", read_only=True)
+
+    class Meta:
+        model = Warehouse
+        fields = [
+            "id",
+            "name",
+            "address"
+        ]
+
+class StockListSerializer(serializers.ModelSerializer):
+    product = ProductStockSerializer(read_only=True)
+    warehouse = WarehouseStockSerializer(read_only=True)
+    available_quantity = serializers.IntegerField(read_only=True
+                                                  )
+    class Meta:
+        model = Stock
+        fields = ['id', 'product', 'warehouse', 'quantity', 'reserved_quantity', 'available_quantity']
+        read_only_fields = ['id', 'available_quantity']
+
+class StockUpdateSerializer(serializers.ModelSerializer):
+    available_quantity = serializers.IntegerField()
+    class Meta:
+        model = Stock
+        fields = ["id", "quantity", "reserved_quantity", "available_quantity"]
+        read_only_fields = ["id", "reserved_quantity", "available_quantity"]
+
+    def validate_quantity(self, value):
+        if value == self.instance.quantity:
+            raise serializers.ValidationError(
+                "Новое количество должно отличаться от текущего."
+            )
+        return value

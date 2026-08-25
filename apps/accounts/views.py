@@ -66,6 +66,9 @@ class UsersViewSet(ModelViewSet):
             return UsersViewSetCreateSerializer
         return UsersViewSetSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(organization=self.request.user.organization)
+
     def perform_destroy(self, instance: User) -> None:
         instance.is_active = False
         instance.save()

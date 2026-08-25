@@ -1,17 +1,19 @@
-from rest_framework import permissions, status
+from rest_framework import permissions, status, generics
+from rest_framework.mixins import UpdateModelMixin
 from rest_framework.response import Response
 from django.db import models
-from django.db.models import Sum, Value, Prefetch, Count
+from django.db.models import Sum, Value, Prefetch, Count, F
 from django.db.models.functions import Coalesce
 
 from django.contrib.auth import get_user_model
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from apps.catalog.models import Product, Stock, Warehouse
 from apps.catalog.paginations import ProductNumberPagination
 from apps.catalog.permissions import (
     IsSupplierAdminOwner,
     IsSupplierManagerOwner,
+    IsWarehouseManagerOwner,
 )
 from apps.catalog.serializers import (
     ProductFilter,
@@ -22,6 +24,8 @@ from apps.catalog.serializers import (
     WarehouseListSerializer,
     WarehouseFilter,
     WarehouseCreateUpdateSerializer,
+    StockListSerializer,
+    StockUpdateSerializer,
 )
 
 User = get_user_model()
@@ -87,6 +91,9 @@ class ProductViewSet(ModelViewSet):
 
         return queryset
 
+    def perform_create(self, serializer):
+        serializer.save(supplier=self.request.user.organization)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if not instance.is_active:
@@ -118,10 +125,10 @@ class WarehouseViewSet(ModelViewSet):
         return base_permissions
 
     def get_queryset(self):
-        queryset = self.queryset.all()
+        queryset = self.queryset.filter(is_active=True)
         user = self.request.user
         if user.is_buyer and user.has_organization:
-            queryset = queryset.filter(is_active=True).select_related('supplier')
+            queryset = queryset.select_related('supplier')
         else:
             queryset = queryset.filter(supplier=user.organization).annotate(
                 products_count=Count('stocks__product', distinct=True)
@@ -133,11 +140,52 @@ class WarehouseViewSet(ModelViewSet):
             return WarehouseCreateUpdateSerializer
         return super().get_serializer_class()
 
+    def perform_create(self, serializer):
+        serializer.save(supplier=self.request.user.organization)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.is_active = False
         instance.save()
         return Response(
-            {"detail": "Склад успешно деактивирован."},
-            status=status.HTTP_200_OK
+            {"detail": "Склад успешно деактивирован."}, status=status.HTTP_200_OK
         )
+
+class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
+    queryset = Stock.objects.all().select_related('warehouse')
+    serializer_class = StockListSerializer
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsSupplierAdminOwner | IsSupplierManagerOwner | IsWarehouseManagerOwner,
+    ]
+
+    http_method_names = ['get', 'patch', 'head', 'options']
+
+    def get_permissions(self):
+        if self.action == 'partial_update':
+            return [(permissions.IsAuthenticated & (IsSupplierAdminOwner | IsWarehouseManagerOwner))()]
+        return super().get_permissions()
+
+    def get_serializer_class(self):
+        if self.action == "partial_update":
+            return StockUpdateSerializer
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        queryset = queryset.filter(warehouse__supplier=user.organization)
+        queryset = queryset.annotate(
+            available_quantity=F('quantity') - F('reserved_quantity')
+        )
+        return queryset
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            self.get_object(), data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        updated_instance = self.get_queryset().get(pk=instance.pk)
+        return Response(StockListSerializer(updated_instance).data)

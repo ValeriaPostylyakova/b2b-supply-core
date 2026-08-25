@@ -11,4 +11,5 @@ class IsSupplierManagerOwner(BaseOrganizationPermission):
 
 class IsWarehouseManagerOwner(BaseOrganizationPermission):
     role_name = 'WAREHOUSE_MANAGER'
-    org_field = 'warehouse'
+    org_field = 'supplier'
+

@@ -85,24 +85,13 @@ class UsersViewSetCreateSerializer(serializers.ModelSerializer):
         ],
     )
     organization: serializers.SlugRelatedField = serializers.SlugRelatedField(
-        slug_field="name", read_only=True
+        slug_field="name",
+        read_only=True
     )
 
     class Meta:
         model = User
         fields = ["email", "password", "role", "organization"]
-
-    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
-        request: Request | None = self.context.get("request")
-
-        if not request or not request.user:
-            raise serializers.ValidationError("Ошибка контекста запроса")
-
-        current_user_organization: Organization | None = getattr(
-            request.user, "organization", None
-        )
-        data["organization"] = current_user_organization
-        return data
 
     def validate_role(self, value: str) -> str:
         if value not in User.Roles.values:
