@@ -2,11 +2,9 @@ import django_filters
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db.models import Q
-from mypy.dmypy.client import request
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 
-from apps.catalog.models import Product, Warehouse, Stock
+from apps.catalog.models import Product, Stock, Warehouse
 
 User = get_user_model()
 
@@ -39,30 +37,52 @@ class WarehouseListSerializer(RoleFieldsMixin, serializers.ModelSerializer):
     products_count = serializers.IntegerField(read_only=True)
     supplier = serializers.SlugRelatedField(slug_field="name", read_only=True)
 
-    supplier_fields = {"products_count", 'created_at', 'updated_at', 'is_active'}
-    buyer_fields = {'supplier'}
+    supplier_fields = {"products_count", "created_at", "updated_at", "is_active"}
+    buyer_fields = {"supplier"}
+
     class Meta:
         model = Warehouse
-        fields = ['id', 'name', 'address', 'is_active', 'created_at', 'updated_at', 'products_count', 'supplier']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "name",
+            "address",
+            "is_active",
+            "created_at",
+            "updated_at",
+            "products_count",
+            "supplier",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class WarehouseCreateUpdateSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="external_id", read_only=True)
     supplier = serializers.SlugRelatedField(slug_field="name", read_only=True)
+
     class Meta:
         model = Warehouse
-        fields = ["id", "name", "address", "supplier", "is_active", "created_at", "updated_at"]
-        read_only_fields = WarehouseListSerializer.Meta.read_only_fields + ['supplier']
+        fields = [
+            "id",
+            "name",
+            "address",
+            "supplier",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = WarehouseListSerializer.Meta.read_only_fields + ["supplier"]
 
     def validate(self, attrs):
         if not self.instance:
             if "is_active" in attrs:
-                raise serializers.ValidationError("Поле is_active не может быть указано при создании склада")
+                raise serializers.ValidationError(
+                    "Поле is_active не может быть указано при создании склада"
+                )
         return attrs
 
+
 class WarehouseFilter(django_filters.rest_framework.FilterSet):
-    search = django_filters.CharFilter(method='filter_search', label='Поиск')
+    search = django_filters.CharFilter(method="filter_search", label="Поиск")
     ordering = django_filters.OrderingFilter(
         fields=[
             "name",
@@ -73,12 +93,14 @@ class WarehouseFilter(django_filters.rest_framework.FilterSet):
 
     class Meta:
         model = Warehouse
-        fields = ['search', 'ordering', 'is_active']
+        fields = ["search", "ordering", "is_active"]
 
     def filter_search(self, queryset, name, value):
         if not value:
             return queryset
-        return queryset.filter(Q(name__icontains=value) | Q(supplier__name__icontains=value)).distinct()
+        return queryset.filter(
+            Q(name__icontains=value) | Q(supplier__name__icontains=value)
+        ).distinct()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -90,8 +112,9 @@ class WarehouseFilter(django_filters.rest_framework.FilterSet):
         if not user.is_supplier:
             self.filters.pop("is_active", None)
 
+
 class ProductListSerializer(RoleFieldsMixin, serializers.ModelSerializer):
-    id = serializers.UUIDField(source='external_id', read_only=True)
+    id = serializers.UUIDField(source="external_id", read_only=True)
     available_quantity = serializers.IntegerField(read_only=True)
     quantity = serializers.IntegerField(read_only=True)
     reserved_quantity = serializers.IntegerField(read_only=True)
@@ -101,14 +124,27 @@ class ProductListSerializer(RoleFieldsMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'sku', 'name', 'price', 'description', 'unit', 'is_active', 'available_quantity', 'quantity', 'reserved_quantity']
+        fields = [
+            "id",
+            "sku",
+            "name",
+            "price",
+            "description",
+            "unit",
+            "is_active",
+            "available_quantity",
+            "quantity",
+            "reserved_quantity",
+        ]
 
 
 class ProductWarehouseListSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(source='warehouse.external_id', read_only=True)
-    name = serializers.CharField(source='warehouse.name', read_only=True)
-    address = serializers.CharField(source='warehouse.address', read_only=True)
-    supplier = serializers.SlugRelatedField(slug_field="name", source='warehouse.supplier', read_only=True)
+    id = serializers.UUIDField(source="warehouse.external_id", read_only=True)
+    name = serializers.CharField(source="warehouse.name", read_only=True)
+    address = serializers.CharField(source="warehouse.address", read_only=True)
+    supplier = serializers.SlugRelatedField(
+        slug_field="name", source="warehouse.supplier", read_only=True
+    )
     is_active = serializers.BooleanField(source="warehouse.is_active", read_only=True)
 
     quantity = serializers.IntegerField(read_only=True)
@@ -135,7 +171,6 @@ class ProductWarehouseListSerializer(serializers.ModelSerializer):
         return max(0, obj.quantity - obj.reserved_quantity)
 
 
-
 class ProductListDetailSerializer(ProductListSerializer):
     warehouses = serializers.SerializerMethodField()
 
@@ -150,24 +185,21 @@ class ProductListDetailSerializer(ProductListSerializer):
             for stock in stocks
         ]
 
-class ProductFilter(django_filters.rest_framework.FilterSet):
-    search = django_filters.CharFilter(method='filter_search', label='Поиск')
 
-    min_price = django_filters.NumberFilter(field_name='price', lookup_expr='gte')
-    max_price = django_filters.NumberFilter(field_name='price', lookup_expr='lte')
-    available = django_filters.BooleanFilter(field_name='is_active', label='Доступен')
+class ProductFilter(django_filters.rest_framework.FilterSet):
+    search = django_filters.CharFilter(method="filter_search", label="Поиск")
+
+    min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
+    max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+    available = django_filters.BooleanFilter(field_name="is_active", label="Доступен")
 
     ordering = django_filters.OrderingFilter(
-        fields=[
-            'price',
-            'created_at',
-            'name'
-        ],
+        fields=["price", "created_at", "name"],
         field_labels={
-            'price': 'Цена',
-            'created_at': 'Дата создания',
-            'name': 'Название'
-        }
+            "price": "Цена",
+            "created_at": "Дата создания",
+            "name": "Название",
+        },
     )
 
     class Meta:
@@ -177,11 +209,13 @@ class ProductFilter(django_filters.rest_framework.FilterSet):
     def filter_search(self, queryset, name, value):
         if not value:
             return queryset
-        return queryset.filter(Q(name__icontains=value) | Q(sku__icontains=value)).distinct()
+        return queryset.filter(
+            Q(name__icontains=value) | Q(sku__icontains=value)
+        ).distinct()
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(source='external_id', read_only=True)
+    id = serializers.UUIDField(source="external_id", read_only=True)
     supplier = serializers.SlugRelatedField(slug_field="name", read_only=True)
     price = serializers.DecimalField(
         max_digits=10,
@@ -195,11 +229,11 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id','sku', 'name', 'price', 'description', 'supplier']
+        fields = ["id", "sku", "name", "price", "description", "supplier"]
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(source='external_id', read_only=True)
+    id = serializers.UUIDField(source="external_id", read_only=True)
     price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -209,12 +243,15 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             )
         ],
     )
+
     class Meta:
         model = Product
         fields = ["id", "name", "price", "description"]
 
+
 class ProductStockSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(source='external_id', read_only=True)
+    id = serializers.UUIDField(source="external_id", read_only=True)
+
     class Meta:
         model = Product
         fields = ["id", "sku", "name"]
@@ -225,24 +262,30 @@ class WarehouseStockSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Warehouse
-        fields = [
-            "id",
-            "name",
-            "address"
-        ]
+        fields = ["id", "name", "address"]
+
 
 class StockListSerializer(serializers.ModelSerializer):
     product = ProductStockSerializer(read_only=True)
     warehouse = WarehouseStockSerializer(read_only=True)
-    available_quantity = serializers.IntegerField(read_only=True
-                                                  )
+    available_quantity = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Stock
-        fields = ['id', 'product', 'warehouse', 'quantity', 'reserved_quantity', 'available_quantity']
-        read_only_fields = ['id', 'available_quantity']
+        fields = [
+            "id",
+            "product",
+            "warehouse",
+            "quantity",
+            "reserved_quantity",
+            "available_quantity",
+        ]
+        read_only_fields = ["id", "available_quantity"]
+
 
 class StockUpdateSerializer(serializers.ModelSerializer):
     available_quantity = serializers.IntegerField()
+
     class Meta:
         model = Stock
         fields = ["id", "quantity", "reserved_quantity", "available_quantity"]
@@ -254,3 +297,10 @@ class StockUpdateSerializer(serializers.ModelSerializer):
                 "Новое количество должно отличаться от текущего."
             )
         return value
+
+
+class StockReportsSerializer(serializers.Serializer):
+    products_count = serializers.IntegerField(read_only=True)
+    total_quantity = serializers.IntegerField(read_only=True)
+    total_reserved = serializers.IntegerField(read_only=True)
+    total_available = serializers.IntegerField(read_only=True)

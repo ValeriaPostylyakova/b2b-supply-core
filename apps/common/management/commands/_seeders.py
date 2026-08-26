@@ -1,18 +1,26 @@
 import random
-import uuid
+from datetime import timedelta
+from datetime import timezone as datetime_timezone
+
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from faker import Faker
+
 from apps.accounts.models import Organization
-from apps.catalog.models import Product, Warehouse, Stock
+from apps.catalog.models import Product, Stock, Warehouse
+from apps.orders.models import Order, OrderItem, Reservation
 
 User = get_user_model()
 fake = Faker(["ru_RU"])
 
 
 def clean_old_data():
+    Reservation.objects.all().delete()
+    OrderItem.objects.all().delete()
+    Order.objects.all().delete()
+    Stock.objects.all().delete()
     User.objects.filter(email__endswith="@example.com").delete()
     Organization.objects.filter(name__endswith=" (Тест)").delete()
-    Stock.objects.all().delete()
     Warehouse.objects.filter(name__endswith=" (Тест)").delete()
     Product.objects.filter(name__endswith=" (Тест)").delete()
 
@@ -136,3 +144,104 @@ def seed_stocks(products, warehouses):
                 total_stocks += 1
 
     return total_stocks
+
+
+def seed_orders_and_reservations(orders_count=30):
+    buyers = list(Organization.objects.filter(type=Organization.Types.BUYER))
+    suppliers = list(Organization.objects.filter(type=Organization.Types.SUPPLIER))
+
+    if not buyers or not suppliers:
+        print("Ошибка: Сначала запустите seed_base_data, чтобы создать организации.")
+        return
+
+    created_orders_count = 0
+    created_reservations_count = 0
+
+    print(f"Начало генерации заказов ({orders_count} шт.)...")
+
+    for _ in range(orders_count):
+        buyer = random.choice(buyers)
+        supplier = random.choice(suppliers)
+
+        supplier_products = list(
+            Product.objects.filter(supplier=supplier, is_active=True)
+        )
+        supplier_warehouses = list(
+            Warehouse.objects.filter(supplier=supplier, is_active=True)
+        )
+
+        if not supplier_products or not supplier_warehouses:
+            continue
+
+        status = random.choice(Order.StatusChoices.values)
+
+        with transaction.atomic():
+            order = Order.objects.create(
+                buyer=buyer,
+                supplier=supplier,
+                status=status,
+                created_at=fake.date_time_between(
+                    start_date="-30d",
+                    end_date="now",
+                    tzinfo=datetime_timezone.utc,
+                ),
+            )
+
+            items_to_create_count = min(random.randint(1, 5), len(supplier_products))
+            selected_products = random.sample(supplier_products, items_to_create_count)
+
+            total_amount = 0
+            items_count = 0
+
+            for product in selected_products:
+                quantity = random.randint(1, 15)
+                unit_price = product.price
+                line_total = unit_price * quantity
+                warehouse = random.choice(supplier_warehouses)
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    warehouse=warehouse,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                )
+
+                total_amount += line_total
+                items_count += quantity
+
+                if order.status == Order.StatusChoices.RESERVED:
+                    stock = Stock.objects.filter(
+                        product=product, warehouse=warehouse
+                    ).first()
+
+                    if not stock:
+                        stock = Stock.objects.create(
+                            product=product,
+                            warehouse=warehouse,
+                            quantity=random.randint(50, 200),
+                            reserved_quantity=0,
+                        )
+
+                    expires_at = order.created_at + timedelta(days=3)
+
+                    Reservation.objects.create(
+                        order=order,
+                        stock=stock,
+                        quantity=quantity,
+                        status=Reservation.Status.ACTIVE,
+                        expires_at=expires_at,
+                    )
+                    created_reservations_count += 1
+
+            order.items_count = items_count
+            order.total_amount = total_amount
+            order.save()
+
+            created_orders_count += 1
+
+    print(
+        f"Успешно создано: {created_orders_count} заказов и {created_reservations_count} активных резерваций."
+    )
+    return created_orders_count
