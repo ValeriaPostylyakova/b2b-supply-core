@@ -21,7 +21,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'django.contrib.postgres',
+    "django.contrib.postgres",
 ]
 
 THIRD_PARTY_APPS = [
@@ -29,9 +29,17 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "django_filters",
     "rest_framework_simplejwt",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
-LOCAL_APPS: list[str] = ['apps.accounts', 'apps.catalog', 'apps.orders', 'apps.documents', 'apps.common']
+LOCAL_APPS: list[str] = [
+    "apps.accounts",
+    "apps.catalog",
+    "apps.orders",
+    "apps.documents",
+    "apps.common",
+]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -108,7 +116,7 @@ STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", default="staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = 'accounts.User'
+AUTH_USER_MODEL = "accounts.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -128,7 +136,7 @@ REST_FRAMEWORK = {
         "apps.common.renderers.ApiJSONRenderer",
         "rest_framework.renderers.JSONRenderer",
     ],
-    'EXCEPTION_HANDLER': 'apps.common.exceptions.api_exception_handler',
+    "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
         "rest_framework.parsers.MultiPartParser",
@@ -192,3 +200,21 @@ LOGGING = {
 }
 
 ADMIN_PANEL_URL = os.getenv("ADMIN_PANEL_URL", "admin")
+
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Важные оптимизации для Production:
+CELERY_TIMEZONE = "Europe/Moscow"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+
+
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+
+CELERY_RESULT_BACKEND = os.getenv("DB_NAME")
+CELERY_CACHE_BACKEND = "django-cache"

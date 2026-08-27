@@ -1,4 +1,5 @@
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict
+
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 from django.db.models import QuerySet
@@ -38,14 +39,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
-class OrganizationMeSerializer(serializers.ModelSerializer):
-    id: serializers.UUIDField = serializers.UUIDField(
-        source="external_id", read_only=True
-    )
+class OrganizationShortSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source="external_id", read_only=True)
 
     class Meta:
         model = Organization
-        fields = ["id", "name", "type"]
+        fields = ["id", "name"]
+
+
+class OrganizationMeSerializer(OrganizationShortSerializer):
+    class Meta(OrganizationShortSerializer.Meta):
+        fields = OrganizationShortSerializer.Meta.fields + ["type"]
 
 
 class UserDetailSerializer(UserSerializer):
@@ -84,10 +88,7 @@ class UsersViewSetCreateSerializer(serializers.ModelSerializer):
             )
         ],
     )
-    organization: serializers.SlugRelatedField = serializers.SlugRelatedField(
-        slug_field="name",
-        read_only=True
-    )
+    organization = OrganizationShortSerializer(read_only=True)
 
     class Meta:
         model = User
@@ -116,12 +117,3 @@ class UsersViewSetCreateSerializer(serializers.ModelSerializer):
             )
 
         return value
-
-    def create(self, validated_data: dict[str, Any]) -> User:
-        data = cast(UserCreatePayload, validated_data)
-
-        password: str = data.pop('password')
-        user = User.objects.create(**data)
-        user.set_password(password)
-        user.save()
-        return user

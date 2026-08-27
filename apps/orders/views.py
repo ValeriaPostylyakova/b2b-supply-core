@@ -1,26 +1,90 @@
-from rest_framework import permissions
+from rest_framework import permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.permissions import (
-    IsBuyerAdminOwner,
-    IsBuyerManagerOwner,
-    IsSupplierAdminOwner,
-    IsSupplierManagerOwner,
+    IsBuyer,
+    IsSupplier,
 )
 from apps.orders.models import Order
+from apps.orders.permissions import IsNotWarehouseRole, IsOrderParticipant
+from apps.orders.serializers import (
+    OrderCreateSerializer,
+    OrderDetailSerializer,
+    OrderListSerializer,
+)
+from apps.orders.services import OrderService
 
 
 class OrdersViewSet(ModelViewSet):
-    queryset = Order.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    queryset = Order.objects.select_related("buyer", "supplier").all()
+    serializer_class = OrderListSerializer
+    permission_classes = [permissions.IsAuthenticated, IsNotWarehouseRole]
+
+    lookup_field = "external_id"
 
     def get_permissions(self):
-        permission_classes = super().get_permissions()
-        if self.action == "list":
-            permission_classes.append(
-                IsSupplierManagerOwner()
-                | IsBuyerManagerOwner()
-                | IsSupplierAdminOwner()
-                | IsBuyerAdminOwner()
-            )
-        return permission_classes
+        base_permissions = super().get_permissions()
+        if self.action in ["update", "partial_update", "destroy"]:
+            return [permissions.IsAdminUser()]
+        if self.action in ["create"]:
+            base_permissions.append(IsBuyer)
+
+        return base_permissions
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        if self.action in ["retrieve", "create"]:
+            queryset = queryset.prefetch_related("items__product", "items__warehouse")
+
+        if self.request.user.is_buyer:
+            queryset = queryset.filter(buyer=self.request.user.organization)
+        elif self.request.user.is_supplier:
+            queryset = queryset.filter(supplier=self.request.user.organization)
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action in ["retrieve"]:
+            return OrderDetailSerializer
+        if self.action in ["create"]:
+            return OrderCreateSerializer
+        return super().get_serializer_class()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        supplier = serializer.validated_data["supplier"]
+        items = serializer.validated_data["items"]
+        buyer = request.user.organization
+        order = OrderService.create_order_with_reservations(buyer, supplier, items)
+
+        response_serializer = OrderDetailSerializer(order)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsOrderParticipant],
+    )
+    def cancel(self, request, pk=None):
+        order = self.get_object()
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsSupplier],
+    )
+    def confirm(self, request, pk=None):
+        order = self.get_object()
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsOrderParticipant],
+    )
+    def documents(self, request, pk=None):
+        order = self.get_object()

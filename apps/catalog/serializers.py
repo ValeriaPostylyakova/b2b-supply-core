@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from django.db.models import Q
 from rest_framework import serializers
 
+from apps.accounts.serializers import OrganizationShortSerializer
 from apps.catalog.models import Product, Stock, Warehouse
 
 User = get_user_model()
@@ -142,9 +143,7 @@ class ProductWarehouseListSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="warehouse.external_id", read_only=True)
     name = serializers.CharField(source="warehouse.name", read_only=True)
     address = serializers.CharField(source="warehouse.address", read_only=True)
-    supplier = serializers.SlugRelatedField(
-        slug_field="name", source="warehouse.supplier", read_only=True
-    )
+    supplier = OrganizationShortSerializer(source="warehouse.supplier", read_only=True)
     is_active = serializers.BooleanField(source="warehouse.is_active", read_only=True)
 
     quantity = serializers.IntegerField(read_only=True)

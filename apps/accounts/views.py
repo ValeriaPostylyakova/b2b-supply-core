@@ -17,6 +17,7 @@ from config import settings
 
 User = get_user_model()
 
+
 class CookieTokenObtainView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
@@ -24,55 +25,57 @@ class CookieTokenObtainView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
-            refresh_token = response.data.pop('refresh')
+            refresh_token = response.data.pop("refresh")
 
             response.set_cookie(
-                key=settings.SIMPLE_JWT['AUTH_COOKIE'],
+                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=refresh_token,
                 httponly=True,
                 secure=False,
-                samesite='Lax',
-                max_age=3600 * 24
+                samesite="Lax",
+                max_age=3600 * 24,
             )
         return response
 
 
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request: Request, *args, **kwargs) -> Response:
-        cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE']
+        cookie_name = settings.SIMPLE_JWT["AUTH_COOKIE"]
         refresh_token = request.COOKIES.get(cookie_name)
 
         if refresh_token:
-            request.data['refresh'] = refresh_token
+            request.data["refresh"] = refresh_token
         return super().post(request, *args, **kwargs)
+
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request: Request) -> Response:
-        user = User.objects.select_related('organization').get(id=request.user.id)
+        user = User.objects.select_related("organization").get(id=request.user.id)
         serializer = UserDetailSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class UsersViewSet(ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOrganizationAdmin]
-    lookup_field = 'external_id'
+    lookup_field = "external_id"
 
     def get_queryset(self):
-        return User.objects.filter(organization=self.request.user.organization)
+        return User.objects.select_related("organization").filter(
+            organization=self.request.user.organization
+        )
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action in ["create", "update", "partial_update"]:
             return UsersViewSetCreateSerializer
         return UsersViewSetSerializer
 
     def perform_create(self, serializer):
-        serializer.save(organization=self.request.user.organization)
+        validated_data = serializer.validated_data
+        organization = self.request.user.organization
+        User.objects.create_user(**validated_data, organization=organization)
 
     def perform_destroy(self, instance: User) -> None:
         instance.is_active = False
         instance.save()
-
-
-
-
