@@ -5,25 +5,10 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
-from rest_framework import status
-from rest_framework.exceptions import APIException
 
 from apps.catalog.models import Stock
+from apps.orders.exceptions import InsufficientStock
 from apps.orders.models import Order, OrderItem, Reservation
-
-
-class InsufficientStock(APIException):
-    status_code = status.HTTP_409_CONFLICT
-    default_code = "INSUFFICIENT_STOCK"
-
-    def __init__(self, product_sku, available, requested):
-        detail = {
-            "code": self.default_code,
-            "detail": f"Not enough stock for product {product_sku}",
-            "available_quantity": available,
-            "requested_quantity": requested,
-        }
-        super().__init__(detail=detail)
 
 
 class OrderService:
@@ -100,4 +85,33 @@ class OrderService:
 
         order.total_amount = total_amount
         order.save(update_fields=["total_amount"])
+        return order
+
+    @staticmethod
+    @transaction.atomic
+    def cancel_order(order_id):
+        order = Order.objects.get(id=order_id)
+        reservations = Reservation.objects.filter(order=order)
+        stocks = list(
+            Stock.objects.select_for_update().filter(reservations__in=reservations)
+        )
+
+        for reservation in reservations:
+            stock = next(s for s in stocks if s.id == reservation.stock_id)
+            stock.reserved_quantity -= reservation.quantity
+            stock.save(update_fields=["reserved_quantity"])
+
+            reservation.status = Reservation.Status.RELEASED
+            reservation.save(update_fields=["status"])
+
+        order.status = order.StatusChoices.CANCELLED
+        order.save(update_fields=["status"])
+
+        return order
+
+    @staticmethod
+    def confirm_order(order_id):
+        order = Order.objects.get(id=order_id)
+        order.status = order.StatusChoices.CONFIRMED
+        order.save(update_fields=["status"])
         return order

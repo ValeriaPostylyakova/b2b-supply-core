@@ -28,8 +28,12 @@ class OrdersViewSet(ModelViewSet):
         base_permissions = super().get_permissions()
         if self.action in ["update", "partial_update", "destroy"]:
             return [permissions.IsAdminUser()]
-        if self.action in ["create"]:
-            base_permissions.append(IsBuyer)
+        elif self.action in ["create"]:
+            return [IsBuyer]
+        elif self.action in ["cancel", "documents"]:
+            return [IsOrderParticipant]
+        elif self.action in ["confirm"]:
+            return [IsSupplier]
 
         return base_permissions
 
@@ -62,29 +66,47 @@ class OrdersViewSet(ModelViewSet):
         buyer = request.user.organization
         order = OrderService.create_order_with_reservations(buyer, supplier, items)
 
-        response_serializer = OrderDetailSerializer(order)
+        optimized_order = self.get_queryset().get(pk=order.pk)
+        response_serializer = OrderDetailSerializer(optimized_order)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=True,
         methods=["post"],
-        permission_classes=[IsOrderParticipant],
     )
-    def cancel(self, request, pk=None):
+    def cancel(self, request, external_id=None):
         order = self.get_object()
+
+        if order.status in [
+            Order.StatusChoices.CANCELLED,
+            Order.StatusChoices.CONFIRMED,
+        ]:
+            return Response(
+                "Данный заказ не может быть отменен", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        OrderService.cancel_order(order.id)
+        return Response("Заказ успешно отменен", status=status.HTTP_200_OK)
 
     @action(
         detail=True,
         methods=["post"],
-        permission_classes=[IsSupplier],
     )
-    def confirm(self, request, pk=None):
+    def confirm(self, request, external_id=None):
         order = self.get_object()
+
+        if order.status != Order.StatusChoices.RESERVED:
+            return Response(
+                "Данный заказ не может быть подтвержден",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        OrderService.confirm_order(order.id)
+        return Response("Заказ успешно подтвержден", status=status.HTTP_200_OK)
 
     @action(
         detail=True,
         methods=["post"],
-        permission_classes=[IsOrderParticipant],
     )
     def documents(self, request, pk=None):
         order = self.get_object()

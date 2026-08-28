@@ -50,6 +50,20 @@ class OrderListSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        request = self.context.get("request")
+        if not request or not request.user:
+            raise serializers.ValidationError("Ошибка контекста запроса")
+
+        if request.method == "GET":
+            user = request.user
+            if user.is_buyer:
+                self.fields.pop("buyer", None)
+            elif user.is_supplier:
+                self.fields.pop("supplier", None)
+
 
 class OrderDetailSerializer(OrderListSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
