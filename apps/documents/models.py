@@ -1,33 +1,6 @@
 from django.db import models
 
 
-class FileDocument(models.Model):
-    class DocumentType(models.TextChoices):
-        INVOICE = "INVOICE", "Invoice"
-
-    order = models.ForeignKey(
-        "orders.Order",
-        on_delete=models.CASCADE,
-        related_name="documents",
-    )
-    document_type = models.CharField(
-        max_length=20,
-        choices=DocumentType.choices,
-    )
-    storage_key = models.CharField(max_length=500)
-    original_name = models.CharField(max_length=255)
-    content_type = models.CharField(max_length=100)
-    size = models.PositiveBigIntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "file_documents"
-        ordering = ["-created_at"]
-
-    def __str__(self) -> str:
-        return self.original_name
-
-
 class PriceListImport(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
@@ -40,7 +13,7 @@ class PriceListImport(models.Model):
         )
 
     supplier = models.ForeignKey(
-        'accounts.Organization',
+        "accounts.Organization",
         on_delete=models.PROTECT,
         related_name="price_list_imports",
     )

@@ -104,9 +104,20 @@ class OrdersViewSet(ModelViewSet):
         OrderService.confirm_order(order.id)
         return Response("Заказ успешно подтвержден", status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"])
+    def invoice(self, request, external_id=None):
+        order = self.get_object()
+
     @action(
         detail=True,
-        methods=["post"],
+        methods=["get"],
     )
-    def documents(self, request, pk=None):
+    def documents(self, request, external_id=None):
         order = self.get_object()
+
+    @action(
+        detail=True,
+        methods=["get"],
+    )
+    def documents_download(self, request, external_id=None):
+        pass

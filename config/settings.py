@@ -31,6 +31,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "django_celery_results",
     "django_celery_beat",
+    "storages",
 ]
 
 LOCAL_APPS: list[str] = [
@@ -218,3 +219,37 @@ CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 CELERY_RESULT_BACKEND = os.getenv("DB_NAME")
 CELERY_CACHE_BACKEND = "django-cache"
+
+# Ключи доступа (создаются в личном кабинете Cloud.ru)
+AWS_ACCESS_KEY_ID = os.getenv("S3_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("S3_SECRET")
+
+AWS_STORAGE_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+AWS_S3_ENDPOINT_URL = "https://cloud.ru"
+AWS_S3_REGION_NAME = "ru-central1"
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "access_key": AWS_ACCESS_KEY_ID,
+            "secret_key": AWS_SECRET_ACCESS_KEY,
+            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "endpoint_url": AWS_S3_ENDPOINT_URL,
+            "region_name": AWS_S3_REGION_NAME,
+            "signature_version": AWS_S3_SIGNATURE_VERSION,
+            # Защита от случайного перезаписывания файлов с одинаковыми именами
+            "file_overwrite": False,
+            # Если бакет публичный, отключаем генерацию длинных временных токенов (?).
+            # Ссылки в DRF будут иметь красивый и постоянный вид.
+            "querystring_auth": False,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+# Корректный URL для медиа-файлов
+MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
