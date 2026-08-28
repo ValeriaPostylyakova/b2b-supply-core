@@ -45,6 +45,16 @@ class Order(models.Model):
         verbose_name_plural = "Заказы"
         ordering = ["-created_at"]
 
+        indexes = [
+            models.Index(
+                fields=["status", "created_at"], name="order_status_created_idx"
+            ),
+            models.Index(
+                fields=["status", "total_amount"], name="order_status_total_idx"
+            ),
+            models.Index(fields=["created_at"], name="order_created_at_idx"),
+        ]
+
     def __str__(self):
         return f"Заказ №{self.id} от {self.created_at.strftime('%d.%m.%Y')}"
 

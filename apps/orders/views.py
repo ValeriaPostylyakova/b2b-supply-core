@@ -8,10 +8,12 @@ from apps.accounts.permissions import (
     IsSupplier,
 )
 from apps.orders.models import Order
+from apps.orders.paginations import OrderNumberPagination
 from apps.orders.permissions import IsNotWarehouseRole, IsOrderParticipant
 from apps.orders.serializers import (
     OrderCreateSerializer,
     OrderDetailSerializer,
+    OrderFilter,
     OrderListSerializer,
 )
 from apps.orders.services import OrderService
@@ -21,6 +23,8 @@ class OrdersViewSet(ModelViewSet):
     queryset = Order.objects.select_related("buyer", "supplier").all()
     serializer_class = OrderListSerializer
     permission_classes = [permissions.IsAuthenticated, IsNotWarehouseRole]
+    pagination_class = OrderNumberPagination
+    filterset_class = OrderFilter
 
     lookup_field = "external_id"
 
