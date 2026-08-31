@@ -5,7 +5,8 @@ from apps.accounts.models import Organization
 from apps.accounts.serializers import OrganizationShortSerializer
 from apps.catalog.models import Product, Warehouse
 from apps.catalog.serializers import ProductStockSerializer, WarehouseStockSerializer
-from apps.orders.models import Order, OrderItem
+from apps.orders.models import FileDocument, Order, OrderItem
+from config.storages import PrivateMediaStorage
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -147,3 +148,40 @@ class OrderFilter(django_filters.rest_framework.FilterSet):
     class Meta:
         model = Order
         fields = ["status"]
+
+
+class OrderReportsSerializer(serializers.Serializer):
+    orders_count = serializers.IntegerField()
+    orders_total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    average_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    min_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    max_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class FileDocumentSerializer(serializers.ModelSerializer):
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FileDocument
+        fields = [
+            "id",
+            "document_type",
+            "storage_key",
+            "original_name",
+            "content_type",
+            "size",
+            "download_url",
+        ]
+
+    def get_download_url(self, obj):
+        storage = PrivateMediaStorage()
+
+        from urllib.parse import quote
+
+        filename = quote(obj.original_name or "document.pdf")
+        content_disposition = f"attachment; filename*=UTF-8''{filename}"
+
+        return storage.url(
+            obj.storage_key,
+            parameters={"ResponseContentDisposition": content_disposition},
+        )

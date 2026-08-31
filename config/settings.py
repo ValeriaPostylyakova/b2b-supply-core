@@ -38,7 +38,6 @@ LOCAL_APPS: list[str] = [
     "apps.accounts",
     "apps.catalog",
     "apps.orders",
-    "apps.documents",
     "apps.common",
 ]
 
@@ -209,25 +208,21 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
-# Важные оптимизации для Production:
 CELERY_TIMEZONE = "Europe/Moscow"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
-
-
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
-
-CELERY_RESULT_BACKEND = os.getenv("DB_NAME")
 CELERY_CACHE_BACKEND = "django-cache"
 
-# Ключи доступа (создаются в личном кабинете Cloud.ru)
 AWS_ACCESS_KEY_ID = os.getenv("S3_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("S3_SECRET")
-
 AWS_STORAGE_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-AWS_S3_ENDPOINT_URL = "https://cloud.ru"
+AWS_S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
 AWS_S3_REGION_NAME = "ru-central1"
 AWS_S3_SIGNATURE_VERSION = "s3v4"
+AWS_QUERYSTRING_EXPIRE = 1800
+AWS_S3_VERIFY = False
+AWS_AUTO_CREATE_BUCKET = False
 
 STORAGES = {
     "default": {
@@ -239,11 +234,7 @@ STORAGES = {
             "endpoint_url": AWS_S3_ENDPOINT_URL,
             "region_name": AWS_S3_REGION_NAME,
             "signature_version": AWS_S3_SIGNATURE_VERSION,
-            # Защита от случайного перезаписывания файлов с одинаковыми именами
             "file_overwrite": False,
-            # Если бакет публичный, отключаем генерацию длинных временных токенов (?).
-            # Ссылки в DRF будут иметь красивый и постоянный вид.
-            "querystring_auth": False,
         },
     },
     "staticfiles": {
@@ -251,5 +242,4 @@ STORAGES = {
     },
 }
 
-# Корректный URL для медиа-файлов
 MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"

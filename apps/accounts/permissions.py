@@ -34,6 +34,11 @@ class BaseOrganizationPermission(BasePermission):
         return bool(obj_org and obj_org == getattr(user, "organization", None))
 
 
+class IsSupplierAdminRole(BasePermission):
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        return request.user.role == "SUPPLIER_ADMIN"
+
+
 class IsSupplierAdminOwner(BaseOrganizationPermission):
     role_name = "SUPPLIER_ADMIN"
     org_field = "supplier"

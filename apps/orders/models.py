@@ -104,7 +104,7 @@ class Reservation(models.Model):
     expires_at = models.DateTimeField()
 
 
-class DocumentTypeСhoices(models.TextChoices):
+class DocumentTypeChoices(models.TextChoices):
     INVOICE = "invoice", "Invoice"
 
 
@@ -116,7 +116,7 @@ class FileDocument(models.Model):
     )
     document_type = models.CharField(
         max_length=20,
-        choices=DocumentTypeСhoices.choices,
+        choices=DocumentTypeChoices.choices,
     )
     storage_key = models.CharField(max_length=500)
     original_name = models.CharField(max_length=255)
@@ -132,7 +132,7 @@ class FileDocument(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["order", "document_type"],
-                condition=models.Q(document_type=DocumentTypeСhoices.INVOICE),
+                condition=models.Q(document_type=DocumentTypeChoices.INVOICE),
                 name="unique_invoice_per_order",
             )
         ]

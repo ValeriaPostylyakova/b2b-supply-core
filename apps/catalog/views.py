@@ -6,14 +6,16 @@ from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.mixins import UpdateModelMixin
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from apps.accounts.permissions import (
     IsSupplierAdminOwner,
+    IsSupplierAdminRole,
     IsSupplierManagerOwner,
     IsWarehouseManagerOwner,
 )
-from apps.catalog.models import Product, Stock, Warehouse
+from apps.catalog.models import PriceListImport, Product, Stock, Warehouse
 from apps.catalog.paginations import ProductNumberPagination, StockNumberPagination
 from apps.catalog.serializers import (
     ProductCreateSerializer,
@@ -232,3 +234,19 @@ class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
 
         serializer = StockReportsSerializer(report_data)
         return Response(serializer.data)
+
+
+class PriceListCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminRole]
+    queryset = PriceListImport.objects.all()
+
+    def post(self, request):
+        pass
+
+
+class PriceListRetrieveAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminRole]
+    queryset = PriceListImport.objects.all()
+
+    def get(self, request, external_id):
+        pass

@@ -6,9 +6,9 @@ from django.db import models
 
 class Product(models.Model):
     class UnitChoices(models.TextChoices):
-        PIECE = 'pc', 'шт.'
-        KILOGRAM = 'kg', 'кг.'
-        LITER = 'l', 'л.'
+        PIECE = "pc", "шт."
+        KILOGRAM = "kg", "кг."
+        LITER = "l", "л."
 
     external_id = models.UUIDField(
         default=uuid.uuid4,
@@ -23,29 +23,30 @@ class Product(models.Model):
         max_length=10,
         choices=UnitChoices.choices,
         default=UnitChoices.PIECE,
-        verbose_name="Единица измерения"
+        verbose_name="Единица измерения",
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     supplier = models.ForeignKey(
-        'accounts.Organization',
+        "accounts.Organization",
         on_delete=models.CASCADE,
-        limit_choices_to={'type': "SUPPLIER"},
+        limit_choices_to={"type": "SUPPLIER"},
         related_name="products",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["sku", "supplier"],
-                name="unique_sku_per_supplier"
+                fields=["sku", "supplier"], name="unique_sku_per_supplier"
             )
         ]
         indexes = [
             models.Index(fields=["sku"], name="idx_product_sku"),
             models.Index(fields=["price"], name="idx_product_price"),
-            models.Index(fields=["is_active", "price"], name="idx_product_active_price"),
+            models.Index(
+                fields=["is_active", "price"], name="idx_product_active_price"
+            ),
             GinIndex(
                 OpClass("name", name="gin_trgm_ops"),
                 name="product_name_trgm_idx",
@@ -54,6 +55,7 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.sku} - {self.name}"
+
 
 class Warehouse(models.Model):
     external_id = models.UUIDField(
@@ -94,7 +96,7 @@ class Warehouse(models.Model):
 
 class Stock(models.Model):
     product = models.ForeignKey(
-        'catalog.Product',
+        "catalog.Product",
         on_delete=models.PROTECT,
         related_name="stocks",
     )
@@ -121,3 +123,39 @@ class Stock(models.Model):
     def supplier(self):
         return self.warehouse.supplier if self.warehouse else None
 
+
+class PriceListImport(models.Model):
+    external_id = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+    )
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        PROCESSING = "PROCESSING", "Processing"
+        COMPLETED = "COMPLETED", "Completed"
+        FAILED = "FAILED", "Failed"
+        COMPLETED_WITH_ERRORS = (
+            "COMPLETED_WITH_ERRORS",
+            "Completed with errors",
+        )
+
+    supplier = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="price_list_imports",
+    )
+    original_name = models.CharField(max_length=255)
+    storage_key = models.CharField(max_length=500)
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    total_rows = models.PositiveIntegerField(default=0)
+    processed_rows = models.PositiveIntegerField(default=0)
+    success_rows = models.PositiveIntegerField(default=0)
+    error_rows = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)

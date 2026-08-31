@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Отчет о заказе № {{ order.id|slice:":8" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 15mm 20mm 15mm;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .order-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a365d;
+            margin: 0 0 5px 0;
+        }
+        .order-meta {
+            font-size: 11px;
+            color: #718096;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 3px;
+            background-color: #c6f6d5;
+            color: #22543d;
+            text-transform: uppercase;
+        }
+        .parties-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .parties-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 10px 0 0;
+        }
+        .parties-table td:last-child {
+            padding: 0 0 0 10px;
+        }
+        .party-block {
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 12px;
+            background-color: #f7fafc;
+            min-height: 100px;
+        }
+        .party-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        .party-name {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        .party-id {
+            font-size: 10px;
+            color: #a0aec0;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .items-table tr {
+            page-break-inside: avoid;
+        }
+        .items-table th {
+            background-color: #1a365d;
+            color: #ffffff;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 11px;
+        }
+        .items-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        .items-table tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+        .product-sku {
+            font-size: 10px;
+            color: #718096;
+            display: block;
+            margin-top: 2px;
+        }
+        .warehouse-info {
+            font-size: 10px;
+            color: #4a5568;
+            line-height: 1.3;
+        }
+        .warehouse-name {
+            font-weight: bold;
+            color: #718096;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .totals-container {
+            width: 100%;
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+        .totals-table {
+            float: right;
+            width: 300px;
+            border-collapse: collapse;
+        }
+        .totals-table td {
+            padding: 6px 10px;
+        }
+        .totals-label {
+            text-align: right;
+            color: #4a5568;
+        }
+        .totals-value {
+            text-align: right;
+            font-weight: bold;
+        }
+        .grand-total {
+            font-size: 16px;
+            color: #1a365d;
+            border-top: 2px solid #1a365d;
+            padding-top: 8px !important;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9px;
+            color: #a0aec0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <table style="width: 100%;">
+            <tr>
+                <td>
+                    <div class="order-title">Заказ № {{ order.id }}</div>
+                    <div class="order-meta">
+                        Создан: {{ order.created_at|date:"d.m.Y H:i:s" }} &nbsp;|&nbsp; Обновлен: {{ order.updated_at|date:"d.m.Y H:i:s" }}
+                    </div>
+                </td>
+                <td class="text-right" style="vertical-align: middle;">
+                    <span class="status-badge">{{ order.status }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="parties-table">
+        <tr>
+            <td>
+                <div class="party-block">
+                    <div class="party-title">Поставщик</div>
+                    {% if order.supplier %}
+                        <div class="party-name">{{ order.supplier.name }}</div>
+                    {% else %}
+                        <div class="party-name">Данные поставщика отсутствуют</div>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                <div class="party-block">
+                    <div class="party-title">Покупатель</div>
+                    <div class="party-name">{{ order.buyer.name }}</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 30%;">Наименование товара</th>
+                <th style="width: 30%;">Склад отгрузки</th>
+                <th class="text-center" style="width: 10%;">Кол-во</th>
+                <th class="text-right" style="width: 12%;">Цена</th>
+                <th class="text-right" style="width: 13%;">Сумма</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>
+                    <strong>{{ item.product.name }}</strong>
+                    {% if item.product.sku %}
+                        <span class="product-sku">Артикул: {{ item.product.sku }}</span>
+                    {% endif %}
+                </td>
+                <td class="warehouse-info">
+                    {% if item.warehouse %}
+                        <span class="warehouse-name">{{ item.warehouse.name }}</span><br>
+                        {{ item.warehouse.address }}
+                    {% else %}
+                        <span class="warehouse-name">Не указан</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-right">{{ item.unit_price }}</td>
+                <td class="text-right">{{ item.line_total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center" style="padding: 20px; color: #a0aec0;">
+                    В заказе нет позиций
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals-container">
+        <table class="totals-table">
+            <tr>
+                <td class="totals-label">Позиций в документе:</td>
+                <td class="totals-value">{{ items|length }} (из {{ order.items_count }})</td>
+            </tr>
+            <tr>
+                <td class="totals-label grand-total">Итого к оплате:</td>
+                <td class="totals-value grand-total">{{ order.total_amount }}</td>
+            </tr>
+        </table>
+        <div style="clear: both;"></div>
+    </div>
+
+    <div class="footer">
+        Документ сгенерирован автоматически из системы учета заказов.
+    </div>
+
+</body>
+</html>

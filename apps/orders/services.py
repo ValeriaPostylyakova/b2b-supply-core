@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from apps.catalog.models import Stock
 from apps.orders.exceptions import InsufficientStock
-from apps.orders.models import Order, OrderItem, Reservation
+from apps.orders.models import FileDocument, Order, OrderItem, Reservation
 
 
 class OrderService:
@@ -115,3 +115,8 @@ class OrderService:
         order.status = order.StatusChoices.CONFIRMED
         order.save(update_fields=["status"])
         return order
+
+    @staticmethod
+    def get_order_documents(order_id):
+        order = Order.objects.get(id=order_id)
+        return FileDocument.objects.filter(order=order)
