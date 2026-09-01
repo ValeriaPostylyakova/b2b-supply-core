@@ -1,9 +1,12 @@
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Count, F, Prefetch, Sum, Value
 from django.db.models.functions import Coalesce
 from rest_framework import permissions, status
 from rest_framework.decorators import action
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.mixins import UpdateModelMixin
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,6 +21,9 @@ from apps.accounts.permissions import (
 from apps.catalog.models import PriceListImport, Product, Stock, Warehouse
 from apps.catalog.paginations import ProductNumberPagination, StockNumberPagination
 from apps.catalog.serializers import (
+    PriceListImportCreateSerializer,
+    PriceListImportStatusSerializer,
+    PriceListPresignedUrlRequestSerializer,
     ProductCreateSerializer,
     ProductFilter,
     ProductListDetailSerializer,
@@ -30,20 +36,22 @@ from apps.catalog.serializers import (
     WarehouseFilter,
     WarehouseListSerializer,
 )
+from apps.catalog.services import PriceListImportService
+from config.storages import PrivateMediaStorage
 
 User = get_user_model()
 
 
 class ProductViewSet(ModelViewSet):
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(is_active=True)
+    serializer_class = ProductListSerializer
     lookup_field = "external_id"
+
     filterset_class = ProductFilter
     pagination_class = ProductNumberPagination
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
-        if self.action == "list":
-            return ProductListSerializer
         if self.action == "retrieve":
             return ProductListDetailSerializer
         if self.action == "create":
@@ -236,17 +244,55 @@ class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class PriceListCreateAPIView(APIView):
+class PriceListPresignedUrlAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSupplierAdminRole]
-    queryset = PriceListImport.objects.all()
 
     def post(self, request):
-        pass
+        serializer = PriceListPresignedUrlRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        file_name = serializer.validated_data["file_name"]
+        ext = file_name.split(".")[-1]
+        storage_key = f"price_lists/{uuid.uuid4()}.{ext}"
+
+        storage = PrivateMediaStorage()
+        try:
+            upload_url = storage.generate_presigned_put_url(storage_key)
+        except Exception as e:
+            raise e
+
+        return Response(
+            {"upload_url": upload_url, "storage_key": storage_key},
+            status=status.HTTP_200_OK,
+        )
 
 
-class PriceListRetrieveAPIView(APIView):
+class PriceListCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSupplierAdminRole]
-    queryset = PriceListImport.objects.all()
 
-    def get(self, request, external_id):
-        pass
+    def post(self, request):
+        serializer = PriceListImportCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        organization = request.user.organization
+
+        import_external_id = PriceListImportService.process_price_list_import(
+            storage_key=serializer.validated_data["storage_key"],
+            original_name=serializer.validated_data["original_name"],
+            organization_id=organization.id,
+        )
+
+        return Response(
+            {
+                "id": import_external_id,
+                "status": PriceListImport.Status.PENDING,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class PriceListRetrieveAPIView(RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminOwner]
+    serializer_class = PriceListImportStatusSerializer
+    queryset = PriceListImport.objects.all()
+    lookup_field = "external_id"

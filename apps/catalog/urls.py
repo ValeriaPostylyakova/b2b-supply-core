@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.catalog.views import (
     PriceListCreateAPIView,
+    PriceListPresignedUrlAPIView,
     PriceListRetrieveAPIView,
     ProductViewSet,
     StockViewSet,
@@ -16,12 +17,15 @@ router.register("stocks", StockViewSet, basename="stock")
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path(
-        "price-list/import/", PriceListCreateAPIView.as_view(), name="price-list-import"
+        "price-list/upload-url/",
+        PriceListPresignedUrlAPIView.as_view(),
+        name="price-list-upload-url",
     ),
+    path("price-list/", PriceListCreateAPIView.as_view(), name="price-list-import"),
     path(
         "price-list/<str:external_id>/",
         PriceListRetrieveAPIView.as_view(),
-        "price-list-retrieve",
+        name="price-list-retrieve",
     ),
 ]
 

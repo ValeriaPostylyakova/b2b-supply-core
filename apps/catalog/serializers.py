@@ -1,3 +1,6 @@
+import os
+from decimal import Decimal
+
 import django_filters
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
@@ -5,7 +8,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from apps.accounts.serializers import OrganizationShortSerializer
-from apps.catalog.models import Product, Stock, Warehouse
+from apps.catalog.models import PriceListImport, Product, Stock, Warehouse
 
 User = get_user_model()
 
@@ -131,7 +134,6 @@ class ProductListSerializer(RoleFieldsMixin, serializers.ModelSerializer):
             "name",
             "price",
             "description",
-            "unit",
             "is_active",
             "available_quantity",
             "quantity",
@@ -303,3 +305,62 @@ class StockReportsSerializer(serializers.Serializer):
     total_quantity = serializers.IntegerField(read_only=True)
     total_reserved = serializers.IntegerField(read_only=True)
     total_available = serializers.IntegerField(read_only=True)
+
+
+class ProductImportRowSerializer(serializers.Serializer):
+    sku = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+    name = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+    warehouse = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+    price = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+    )
+    quantity = serializers.IntegerField(min_value=0)
+
+
+class PriceListImportStatusSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source="external_id")
+
+    class Meta:
+        model = PriceListImport
+        fields = [
+            "id",
+            "status",
+            "total_rows",
+            "success_rows",
+            "error_rows",
+        ]
+
+
+class PriceListImportCreateSerializer(serializers.Serializer):
+    storage_key = serializers.CharField(max_length=512)
+    original_name = serializers.CharField(max_length=255)
+
+
+class PriceListPresignedUrlRequestSerializer(serializers.Serializer):
+    file_name = serializers.CharField(max_length=255)
+
+    def validate_file_name(self, value):
+        _, ext = os.path.splitext(value)
+        ext = ext.lower()
+        allowed_extensions = [".xlsx", ".xls"]
+
+        if ext not in allowed_extensions:
+            raise serializers.ValidationError(
+                "Недопустимый формат файла. Разрешены только файлы Excel (.xlsx, .xls)."
+            )
+
+        return value

@@ -1,0 +1,19 @@
+from apps.accounts.models import Organization
+from apps.catalog.models import PriceListImport
+from apps.catalog.tasks import process_price_list_import_task
+
+
+class PriceListImportService:
+    @staticmethod
+    def process_price_list_import(storage_key, original_name, organization_id):
+        supplier = Organization.objects.get(id=organization_id)
+
+        import_record = PriceListImport.objects.create(
+            supplier=supplier,
+            original_name=original_name,
+            storage_key=storage_key,
+            status=PriceListImport.Status.PENDING,
+        )
+
+        process_price_list_import_task.delay_on_commit(import_record.id)
+        return import_record.external_id
