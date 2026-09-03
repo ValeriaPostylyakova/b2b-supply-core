@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from apps.catalog.models import Stock
+from apps.catalog.models.stock import Stock
 from apps.orders.exceptions import InsufficientStock
 from apps.orders.models import FileDocument, Order, OrderItem, Reservation
 

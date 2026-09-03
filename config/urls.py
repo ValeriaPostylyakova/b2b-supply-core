@@ -6,7 +6,7 @@ from django.urls import URLPattern, URLResolver, include, path
 urlpatterns: list[URLPattern | URLResolver] = [
     path(settings.ADMIN_PANEL_URL, admin.site.urls),
     path("api/v1/", include("apps.accounts.urls")),
-    path("api/v1/", include("apps.catalog.urls")),
+    path("api/v1/", include("apps.catalog.api.urls")),
     path("api/v1/", include("apps.orders.urls")),
 ]
 

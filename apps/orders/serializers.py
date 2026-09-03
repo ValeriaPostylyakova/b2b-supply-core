@@ -3,8 +3,10 @@ from rest_framework import serializers
 
 from apps.accounts.models import Organization
 from apps.accounts.serializers import OrganizationShortSerializer
-from apps.catalog.models import Product, Warehouse
-from apps.catalog.serializers import ProductStockSerializer, WarehouseStockSerializer
+from apps.catalog.api.serializers.product import ProductStockSerializer
+from apps.catalog.api.serializers.warehouse import WarehouseStockSerializer
+from apps.catalog.models.product import Product
+from apps.catalog.models.warehouse import Warehouse
 from apps.orders.models import FileDocument, Order, OrderItem
 from config.storages import PrivateMediaStorage
 

@@ -6,8 +6,11 @@ from celery import shared_task
 from django.db import transaction
 from rest_framework import serializers
 
-from apps.catalog.models import PriceListImport, Product, Stock, Warehouse
-from apps.catalog.serializers import ProductImportRowSerializer
+from apps.catalog.api.serializers.price_list import ProductImportRowSerializer
+from apps.catalog.models.price_list import PriceListImport
+from apps.catalog.models.product import Product
+from apps.catalog.models.stock import Stock
+from apps.catalog.models.warehouse import Warehouse
 from config.storages import PrivateMediaStorage
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,9 @@ from django.db import transaction
 from faker import Faker
 
 from apps.accounts.models import Organization
-from apps.catalog.models import Product, Stock, Warehouse
+from apps.catalog.models.product import Product
+from apps.catalog.models.stock import Stock
+from apps.catalog.models.warehouse import Warehouse
 from apps.orders.models import Order, OrderItem, Reservation
 
 User = get_user_model()
@@ -90,11 +92,6 @@ def seed_products_and_warehouses(suppliers):
 
     created_products = []
     created_warehouses = []
-    unit_choices = [
-        Product.UnitChoices.PIECE,
-        Product.UnitChoices.KILOGRAM,
-        Product.UnitChoices.LITER,
-    ]
 
     for org in suppliers:
         for _ in range(random.randint(1, 2)):
@@ -112,7 +109,6 @@ def seed_products_and_warehouses(suppliers):
                 name=f"{fake.word().capitalize()} (Тест)",
                 price=round(random.uniform(100.00, 15000.00), 2),
                 description=fake.text(max_nb_chars=200),
-                unit=random.choice(unit_choices),
                 is_active=random.choice([True, True, False]),
                 supplier=org,
             )

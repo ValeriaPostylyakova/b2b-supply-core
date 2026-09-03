@@ -1,14 +1,14 @@
 from django.urls import URLPattern, URLResolver, path
 from rest_framework.routers import DefaultRouter
 
-from apps.catalog.views import (
+from apps.catalog.api.views.price_list import (
     PriceListCreateAPIView,
     PriceListPresignedUrlAPIView,
     PriceListRetrieveAPIView,
-    ProductViewSet,
-    StockViewSet,
-    WarehouseViewSet,
 )
+from apps.catalog.api.views.product import ProductViewSet
+from apps.catalog.api.views.stock import StockViewSet
+from apps.catalog.api.views.warehouse import WarehouseViewSet
 
 router = DefaultRouter()
 router.register("warehouses", WarehouseViewSet, basename="warehouse")

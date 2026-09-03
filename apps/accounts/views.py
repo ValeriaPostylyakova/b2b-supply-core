@@ -76,6 +76,6 @@ class UsersViewSet(ModelViewSet):
         organization = self.request.user.organization
         User.objects.create_user(**validated_data, organization=organization)
 
-    def perform_destroy(self, instance: User) -> None:
+    def perform_destroy(self, instance):
         instance.is_active = False
         instance.save()

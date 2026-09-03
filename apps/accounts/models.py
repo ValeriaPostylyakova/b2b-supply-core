@@ -6,8 +6,8 @@ from django.db import models
 
 class Organization(models.Model):
     class Types(models.TextChoices):
-        SUPPLIER = 'SUPPLIER', 'Поставщик'
-        BUYER = 'BUYER', 'Покупатель'
+        SUPPLIER = "SUPPLIER", "Поставщик"
+        BUYER = "BUYER", "Покупатель"
 
     external_id = models.UUIDField(
         default=uuid.uuid4,
@@ -16,12 +16,10 @@ class Organization(models.Model):
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(
-        max_length=150,
-        choices=Types.choices,
-        verbose_name='Тип организации'
+        max_length=150, choices=Types.choices, verbose_name="Тип организации"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    objects: models.Manager['Organization']
+    objects: models.Manager["Organization"]
 
     def __str__(self):
         return self.name
@@ -29,11 +27,11 @@ class Organization(models.Model):
 
 class User(AbstractUser):
     class Roles(models.TextChoices):
-        SUPPLIER_ADMIN = 'SUPPLIER_ADMIN', 'Администратор организации-поставщика'
-        SUPPLIER_MANAGER = 'SUPPLIER_MANAGER', 'Менеджер поставщика'
-        WAREHOUSE_MANAGER = 'WAREHOUSE_MANAGER', 'Сотрудник склада'
-        BUYER_ADMIN = 'BUYER_ADMIN', 'Администратор организации-покупателя'
-        BUYER_MANAGER = 'BUYER_MANAGER', 'Менеджер по закупкам'
+        SUPPLIER_ADMIN = "SUPPLIER_ADMIN", "Администратор организации-поставщика"
+        SUPPLIER_MANAGER = "SUPPLIER_MANAGER", "Менеджер поставщика"
+        WAREHOUSE_MANAGER = "WAREHOUSE_MANAGER", "Сотрудник склада"
+        BUYER_ADMIN = "BUYER_ADMIN", "Администратор организации-покупателя"
+        BUYER_MANAGER = "BUYER_MANAGER", "Менеджер по закупкам"
 
     external_id = models.UUIDField(
         default=uuid.uuid4,
@@ -42,23 +40,21 @@ class User(AbstractUser):
     )
     email = models.EmailField(unique=True)
     role = models.CharField(
-        max_length=150,
-        choices=Roles.choices,
-        verbose_name='Роль пользователя'
+        max_length=150, choices=Roles.choices, verbose_name="Роль пользователя"
     )
     organization = models.ForeignKey(
         Organization,
         on_delete=models.PROTECT,
         related_name="users",
         null=True,
-        blank=True
+        blank=True,
     )
 
     username = models.CharField(null=True, blank=True)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name", "username"]
-    objects: models.Manager['User']
+    objects: models.Manager["User"]
 
     def __str__(self):
         return self.email
@@ -78,4 +74,3 @@ class User(AbstractUser):
     @property
     def has_organization(self):
         return bool(self.organization_id)
-
