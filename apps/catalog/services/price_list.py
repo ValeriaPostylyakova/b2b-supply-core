@@ -1,8 +1,8 @@
 import uuid
 
-from apps.accounts.models import Organization
 from apps.catalog.models.price_list import PriceListImport
 from apps.catalog.tasks.price_list import process_price_list_import_task
+from apps.organizations.models import Organization
 from config.storages import PrivateMediaStorage
 
 

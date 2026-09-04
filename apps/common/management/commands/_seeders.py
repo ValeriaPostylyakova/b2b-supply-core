@@ -6,11 +6,11 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from faker import Faker
 
-from apps.accounts.models import Organization
 from apps.catalog.models.product import Product
 from apps.catalog.models.stock import Stock
 from apps.catalog.models.warehouse import Warehouse
 from apps.orders.models import Order, OrderItem, Reservation
+from apps.organizations.models import Organization
 
 User = get_user_model()
 fake = Faker(["ru_RU"])

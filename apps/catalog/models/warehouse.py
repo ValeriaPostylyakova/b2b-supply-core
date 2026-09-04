@@ -16,7 +16,7 @@ class Warehouse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     supplier = models.ForeignKey(
-        "accounts.Organization",
+        "organizations.Organization",
         on_delete=models.CASCADE,
         limit_choices_to={"type": "SUPPLIER"},
         related_name="warehouses",

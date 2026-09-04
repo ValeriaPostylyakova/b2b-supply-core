@@ -1,9 +1,6 @@
 from rest_framework import permissions
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.permissions import (
-    IsSupplier,
-)
 from apps.catalog.api.filters.product import ProductFilter
 from apps.catalog.api.paginations import ProductNumberPagination
 from apps.catalog.api.serializers.product import (
@@ -14,14 +11,15 @@ from apps.catalog.api.serializers.product import (
 )
 from apps.catalog.models.product import Product
 from apps.catalog.selectors.product import ProductSelector
+from apps.organizations.api.permissions import IsSupplier
 
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.filter(is_active=True)
-    serializer_class = ProductListSerializer()
+    serializer_class = ProductListSerializer
     lookup_field = "external_id"
 
-    filterset_class = ProductFilter()
+    filterset_class = ProductFilter
     pagination_class = ProductNumberPagination
     permission_classes = [permissions.IsAuthenticated]
 

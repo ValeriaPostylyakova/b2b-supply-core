@@ -1,0 +1,60 @@
+from typing import Any
+
+from rest_framework.permissions import OR, BasePermission
+from rest_framework.request import Request
+from rest_framework.views import APIView
+
+
+class IsOrganizationAdmin(BasePermission):
+    message: str = "У вас нет прав для выполнения этого действия."
+    ALLOWED_ROLES: set[str] = {"SUPPLIER_ADMIN", "BUYER_ADMIN"}
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        return request.user.role in self.ALLOWED_ROLES
+
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
+        user = request.user
+        return getattr(obj, "organization", None) == user.organization
+
+
+class BaseOrganizationPermission(BasePermission):
+    role_name: str = None
+    org_field: str = "organization"
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        assert self.role_name is not None, "Укажите 'role_name' в вашем классе прав"
+        return request.user.role == self.role_name
+
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
+        user = request.user
+        obj_org = getattr(obj, self.org_field, None)
+        return bool(obj_org and obj_org == getattr(user, "organization", None))
+
+
+class IsSupplierAdminOwner(BaseOrganizationPermission):
+    role_name = "SUPPLIER_ADMIN"
+    org_field = "supplier"
+
+
+class IsSupplierManagerOwner(BaseOrganizationPermission):
+    role_name = "SUPPLIER_MANAGER"
+    org_field = "supplier"
+
+
+class IsWarehouseManagerOwner(BaseOrganizationPermission):
+    role_name = "WAREHOUSE_MANAGER"
+    org_field = "supplier"
+
+
+class IsBuyerAdminOwner(BaseOrganizationPermission):
+    role_name = "BUYER_ADMIN"
+    org_field = "buyer"
+
+
+class IsBuyerManagerOwner(BaseOrganizationPermission):
+    role_name = "BUYER_MANAGER"
+    org_field = "buyer"
+
+
+IsBuyer = OR(IsBuyerAdminOwner(), IsBuyerManagerOwner())
+IsSupplier = OR(IsSupplierAdminOwner(), IsSupplierManagerOwner())

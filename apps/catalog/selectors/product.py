@@ -1,5 +1,4 @@
-from billiard import Value
-from django.db.models import Prefetch, Q, Sum
+from django.db.models import Prefetch, Q, Sum, Value
 from django.db.models.functions import Coalesce
 
 from apps.catalog.models.stock import Stock

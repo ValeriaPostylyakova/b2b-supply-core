@@ -4,11 +4,6 @@ from rest_framework.mixins import UpdateModelMixin
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from apps.accounts.permissions import (
-    IsSupplierAdminOwner,
-    IsSupplierManagerOwner,
-    IsWarehouseManagerOwner,
-)
 from apps.catalog.api.paginations import StockNumberPagination
 from apps.catalog.api.serializers.stock import (
     StockListSerializer,
@@ -16,6 +11,11 @@ from apps.catalog.api.serializers.stock import (
     StockUpdateSerializer,
 )
 from apps.catalog.models.stock import Stock
+from apps.organizations.api.permissions import (
+    IsSupplierAdminOwner,
+    IsSupplierManagerOwner,
+    IsWarehouseManagerOwner,
+)
 
 
 class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):

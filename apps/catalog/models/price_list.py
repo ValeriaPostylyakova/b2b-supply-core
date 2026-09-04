@@ -21,7 +21,7 @@ class PriceListImport(models.Model):
         )
 
     supplier = models.ForeignKey(
-        "accounts.Organization",
+        "organizations.Organization",
         on_delete=models.PROTECT,
         related_name="price_list_imports",
     )

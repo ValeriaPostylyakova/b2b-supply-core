@@ -1,10 +1,10 @@
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
-from apps.accounts.serializers import OrganizationShortSerializer
 from apps.catalog.models.product import Product
 from apps.catalog.models.stock import Stock
 from apps.common.mixins.role_fields_mixin import RoleFieldsMixin
+from apps.organizations.api.serializers import OrganizationShortSerializer
 
 
 class ProductListSerializer(RoleFieldsMixin, serializers.ModelSerializer):

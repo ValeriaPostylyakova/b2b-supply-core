@@ -2,9 +2,6 @@ from django.db.models import Count
 from rest_framework import permissions
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.permissions import (
-    IsSupplierAdminOwner,
-)
 from apps.catalog.api.filters.warehouse import WarehouseFilter
 from apps.catalog.api.paginations import ProductNumberPagination
 from apps.catalog.api.serializers.warehouse import (
@@ -12,6 +9,9 @@ from apps.catalog.api.serializers.warehouse import (
     WarehouseListSerializer,
 )
 from apps.catalog.models.warehouse import Warehouse
+from apps.organizations.api.permissions import (
+    IsSupplierAdminOwner,
+)
 
 
 class WarehouseViewSet(ModelViewSet):
