@@ -32,14 +32,7 @@ class ProductFilter(django_filters.rest_framework.FilterSet):
         ).distinct()
 
     def filter_available(self, queryset, name, value):
-        if not value:
-            return queryset
-        queryset = queryset.annotate(
-            available_quantity=F("stocks__quantity") - F("stocks__reserved_quantity")
-        )
-
-        if value is True:
-            return queryset.filter(available_quantity__gt=0)
-        elif value is False:
-            return
-        return queryset
+        if value:
+            return queryset.filter(stocks__quantity__gt=F("stocks__reserved_quantity"))
+        else:
+            return queryset.filter(stocks__quantity__lte=F("stocks__reserved_quantity"))

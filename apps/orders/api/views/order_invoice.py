@@ -5,9 +5,12 @@ from rest_framework.views import APIView
 
 from apps.orders.models.order import Order
 from apps.orders.services.order_invoice import InvoiceService
+from apps.organizations.api.permissions import IsSupplier
 
 
 class OrderInvoiceView(APIView):
+    permission_classes = [IsSupplier]
+
     def post(self, request, external_id):
         order = get_object_or_404(Order, external_id=external_id)
         task_id = InvoiceService.generate_invoice(order.id, order.status)

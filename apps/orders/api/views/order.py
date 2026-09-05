@@ -39,7 +39,7 @@ class OrderViewSet(ModelViewSet):
             return [IsBuyer]
         elif self.action in ["cancel", "documents", "reports"]:
             return [IsOrderParticipant]
-        elif self.action in ["confirm", "invoice", "invoice_status"]:
+        elif self.action in ["confirm"]:
             return [IsSupplier]
 
         return base_permissions
