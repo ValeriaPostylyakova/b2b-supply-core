@@ -10,7 +10,7 @@ from apps.orders.services.order_invoice import InvoiceService
 class OrderInvoiceView(APIView):
     def post(self, request, external_id):
         order = get_object_or_404(Order, external_id=external_id)
-        task_id = InvoiceService.generate_invoice(order.id)
+        task_id = InvoiceService.generate_invoice(order.id, order.status)
 
         return Response(
             {

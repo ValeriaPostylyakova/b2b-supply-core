@@ -49,7 +49,7 @@ class UsersViewSetSerializer(UserSerializer):
         fields = list(UserSerializer.Meta.fields) + ["is_active"]
 
 
-class UsersViewSetCreateSerializer(serializers.ModelSerializer):
+class UsersViewCreateSerializer(serializers.ModelSerializer):
     user_queryset: QuerySet[Any] = User.objects.all()
 
     email: serializers.EmailField = serializers.EmailField(
@@ -58,6 +58,15 @@ class UsersViewSetCreateSerializer(serializers.ModelSerializer):
             UniqueValidator(
                 queryset=user_queryset,
                 message="Пользователь с таким email уже существует.",
+            )
+        ],
+    )
+    username = serializers.CharField(
+        required=True,
+        validators=[
+            UniqueValidator(
+                queryset=user_queryset,
+                message="Пользователь с таким username уже существует.",
             )
         ],
     )
@@ -75,7 +84,15 @@ class UsersViewSetCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "password", "role", "organization"]
+        fields = [
+            "email",
+            "password",
+            "username",
+            "first_name",
+            "last_name",
+            "role",
+            "organization",
+        ]
 
     def validate_role(self, value: str) -> str:
         if value not in User.Roles.values:

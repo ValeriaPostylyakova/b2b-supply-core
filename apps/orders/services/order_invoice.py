@@ -1,19 +1,24 @@
 from celery.result import AsyncResult
+from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import ValidationError
 
 from apps.orders.api.serializers.order import FileDocumentSerializer
 from apps.orders.models.file_documents import FileDocument
 from apps.orders.models.order import Order
-from apps.orders.tasks.order_invoice import generate_invoice
+from apps.orders.tasks.order_invoice import generate_order_invoice
 
 
 class InvoiceService:
     @staticmethod
-    def generate_invoice(order_id):
-        order = Order.objects.get(id=order_id)
-        if order.status != Order().StatusChoices.CONFIRMED:
-            raise ValueError("Данный заказ не может быть выставлен счет")
+    def generate_invoice(order_id, order_status):
+        if order_status != Order().StatusChoices.CONFIRMED:
+            raise ValidationError(
+                {
+                    "detail": "Счет может быть сформирован только для подтвержденного заказа."
+                }
+            )
 
-        task = generate_invoice.delay(order.id)
+        task = generate_order_invoice.delay(order_id)
         return task.id
 
     @staticmethod
@@ -29,13 +34,10 @@ class InvoiceService:
 
         if status == "SUCCESS":
             doc_id = task_result.result
-            try:
-                document = FileDocument.objects.get(id=doc_id)
-                serializer = FileDocumentSerializer(document)
+            document = get_object_or_404(FileDocument, id=doc_id)
+            serializer = FileDocumentSerializer(document)
 
-                return {"status": "Completed", "document": serializer.data}
-            except FileDocument.DoesNotExist:
-                raise ValueError("Документ не найден")
+            return {"status": "Completed", "document": serializer.data}
 
         if status == "FAILURE":
             return {

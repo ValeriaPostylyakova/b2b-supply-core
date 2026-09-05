@@ -20,6 +20,10 @@ class Stock(models.Model):
     objects = StockQuerySet().as_manager()
 
     class Meta:
+        indexes = [
+            models.Index(fields=["warehouse", "product"]),
+        ]
+
         constraints = [
             models.UniqueConstraint(
                 fields=["product", "warehouse"],

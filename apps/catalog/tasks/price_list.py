@@ -4,9 +4,17 @@ from typing import Any
 import openpyxl
 from celery import shared_task
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from apps.catalog.api.serializers.price_list import ProductImportRowSerializer
+from apps.catalog.exceptions.price_list import (
+    EmptyFileError,
+    EmptyWorkbookError,
+    ExcelImportError,
+    MissingHeadersError,
+    MissingRequiredColumnsError,
+)
 from apps.catalog.models.price_list import PriceListImport
 from apps.catalog.models.product import Product
 from apps.catalog.models.stock import Stock
@@ -25,24 +33,15 @@ EXPECTED_FIELDS = {
 }
 
 
-@shared_task
-def process_price_list_import_task(import_id: int) -> str:
+@shared_task(bind=True, time_limit=1800)
+def process_price_list_import_task(self, import_id: int) -> str:
     logger.info(
         "Старт задачи импорта прайс-листа #%s",
         import_id,
     )
 
     private_storage = PrivateMediaStorage()
-
-    try:
-        import_record = PriceListImport.objects.get(id=import_id)
-
-    except PriceListImport.DoesNotExist:
-        logger.error(
-            "Запись импорта прайс-листа #%s не найдена",
-            import_id,
-        )
-        return f"Импорт #{import_id} не найден."
+    import_record = get_object_or_404(PriceListImport, id=import_id)
 
     import_record.status = PriceListImport.Status.PROCESSING
     import_record.save(update_fields=["status"])
@@ -72,7 +71,7 @@ def process_price_list_import_task(import_id: int) -> str:
 
         try:
             if not wb.worksheets:
-                raise ValueError("Excel-файл не содержит листов.")
+                raise EmptyWorkbookError()
 
             sheet = wb.worksheets[0]
             row_iterator = sheet.iter_rows(values_only=True)
@@ -80,10 +79,10 @@ def process_price_list_import_task(import_id: int) -> str:
             try:
                 raw_headers = next(row_iterator)
             except StopIteration:
-                raise ValueError("Excel-файл пуст.")
+                raise EmptyFileError()
 
             if not raw_headers or not any(raw_headers):
-                raise ValueError("В Excel-файле отсутствуют заголовки.")
+                raise MissingHeadersError()
 
             headers = [
                 str(header).strip().lower()
@@ -96,10 +95,7 @@ def process_price_list_import_task(import_id: int) -> str:
             missing_fields = EXPECTED_FIELDS - set(headers)
 
             if missing_fields:
-                raise ValueError(
-                    "В файле отсутствуют обязательные "
-                    f"колонки: {', '.join(sorted(missing_fields))}"
-                )
+                raise MissingRequiredColumnsError(missing_fields)
 
             header_indexes = {header: index for index, header in enumerate(headers)}
 
@@ -233,12 +229,8 @@ def process_price_list_import_task(import_id: int) -> str:
             f"ошибок: {error_count}."
         )
 
-    except Exception as exc:
-        logger.exception(
-            "Критическая ошибка импорта #%s: %s",
-            import_id,
-            exc,
-        )
+    except ExcelImportError() as e:
+        logger.error("Ошибка валидации Excel: %s", e.message)
 
         import_record.status = PriceListImport.Status.FAILED
         import_record.save(update_fields=["status"])

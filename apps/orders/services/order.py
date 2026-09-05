@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 from apps.catalog.models.stock import Stock
 from apps.orders.exceptions import InsufficientStock
@@ -94,7 +95,7 @@ class OrderService:
             Order.StatusChoices.CANCELLED,
             Order.StatusChoices.CONFIRMED,
         ]:
-            raise ValueError("Данный заказ не может быть отменен")
+            raise ValidationError("Данный заказ не может быть отменен")
 
         reservations = Reservation.objects.filter(order=order)
         stocks = list(
@@ -117,7 +118,7 @@ class OrderService:
     @staticmethod
     def confirm_order(order):
         if order.status != Order.StatusChoices.RESERVED:
-            raise ValueError("Данный заказ не может быть подтвержден")
+            raise ValidationError("Данный заказ не может быть подтвержден")
 
         order.status = order.StatusChoices.CONFIRMED
         order.save(update_fields=["status"])

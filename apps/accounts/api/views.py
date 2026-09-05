@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from apps.accounts.api.serializers import (
     CustomTokenObtainPairSerializer,
     UserDetailSerializer,
-    UsersViewSetCreateSerializer,
+    UsersViewCreateSerializer,
     UsersViewSetSerializer,
 )
 from apps.organizations.api.permissions import IsOrganizationAdmin
@@ -68,7 +68,7 @@ class UsersViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
-            return UsersViewSetCreateSerializer
+            return UsersViewCreateSerializer
         return UsersViewSetSerializer
 
     def perform_create(self, serializer):

@@ -5,8 +5,8 @@ from apps.catalog.api.serializers.warehouse import WarehouseStockSerializer
 from apps.catalog.models.product import Product
 from apps.catalog.models.warehouse import Warehouse
 from apps.orders.models import FileDocument, Order, OrderItem
-from apps.organizations.models import Organization
 from apps.organizations.api.serializers import OrganizationShortSerializer
+from apps.organizations.models import Organization
 from config.storages import PrivateMediaStorage
 
 
@@ -25,7 +25,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "line_total",
         ]
 
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "unit_price", "line_total"]
 
 
 class OrderListSerializer(serializers.ModelSerializer):
