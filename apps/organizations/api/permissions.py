@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 
 
 class IsOrganizationAdmin(BasePermission):
-    message: str = "У вас нет прав для выполнения этого действия."
     ALLOWED_ROLES: set[str] = {"SUPPLIER_ADMIN", "BUYER_ADMIN"}
 
     def has_permission(self, request: Request, view: APIView) -> bool:

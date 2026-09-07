@@ -75,7 +75,9 @@ class OrderViewSet(ModelViewSet):
         order = OrderService.create_order_with_reservations(buyer, supplier, items)
 
         optimized_order = self.get_queryset().get(pk=order.pk)
-        response_serializer = OrderDetailSerializer(optimized_order)
+        response_serializer = OrderDetailSerializer(
+            optimized_order, context=self.get_serializer_context()
+        )
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     @action(

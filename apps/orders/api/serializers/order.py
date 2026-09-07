@@ -58,6 +58,7 @@ class OrderListSerializer(serializers.ModelSerializer):
 
         request = self.context.get("request")
         if not request or not request.user:
+            print(f"Ошибка контекста запроса: {self.context}")
             raise serializers.ValidationError("Ошибка контекста запроса")
 
         if request.method == "GET":

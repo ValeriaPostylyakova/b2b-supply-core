@@ -18,7 +18,6 @@ class Organization(models.Model):
         max_length=150, choices=Types.choices, verbose_name="Тип организации"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    objects: models.Manager["Organization"]
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.type})"
