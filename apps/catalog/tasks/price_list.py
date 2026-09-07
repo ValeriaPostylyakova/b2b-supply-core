@@ -229,7 +229,7 @@ def process_price_list_import_task(self, import_id: int) -> str:
             f"ошибок: {error_count}."
         )
 
-    except ExcelImportError() as e:
+    except ExcelImportError as e:
         logger.error("Ошибка валидации Excel: %s", e.message)
 
         import_record.status = PriceListImport.Status.FAILED
