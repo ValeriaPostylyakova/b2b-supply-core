@@ -6,13 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
 SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = os.getenv("DEBUG")
+DEBUG = os.getenv("DEBUG") == "True"
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-
+ADMIN_PANEL_URL = os.getenv("ADMIN_PANEL_URL", "admin")
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -34,7 +33,7 @@ THIRD_PARTY_APPS = [
     "storages",
 ]
 
-LOCAL_APPS: list[str] = [
+LOCAL_APPS = [
     "apps.accounts",
     "apps.catalog",
     "apps.orders",
@@ -74,49 +73,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "b2b-supply-core"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", 5432),
-    }
-}
-
-
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", default="staticfiles")
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 AUTH_USER_MODEL = "accounts.User"
 
 REST_FRAMEWORK = {
@@ -145,12 +117,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-CORS_ALLOW_CREDENTIALS = True
-cors_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
-CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in cors_raw.split(",") if origin.strip()
-]
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -167,80 +133,11 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": "refresh_token",
 }
 
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = "DENY"
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "json_or_verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "console": {
-            "level": "INFO",
-            "class": "logging.StreamHandler",
-            "formatter": "json_or_verbose",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "": {
-            "handlers": ["console"],
-            "level": "INFO",
-        },
-    },
-}
-
-ADMIN_PANEL_URL = os.getenv("ADMIN_PANEL_URL", "admin")
-
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-
 CELERY_TIMEZONE = "Europe/Moscow"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 CELERY_CACHE_BACKEND = "django-cache"
-
-AWS_ACCESS_KEY_ID = os.getenv("S3_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("S3_SECRET")
-AWS_STORAGE_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-AWS_S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
-AWS_S3_REGION_NAME = "ru-central1"
-AWS_S3_SIGNATURE_VERSION = "s3v4"
-AWS_QUERYSTRING_EXPIRE = 1800
-AWS_S3_VERIFY = False
-AWS_AUTO_CREATE_BUCKET = False
-
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "access_key": AWS_ACCESS_KEY_ID,
-            "secret_key": AWS_SECRET_ACCESS_KEY,
-            "bucket_name": AWS_STORAGE_BUCKET_NAME,
-            "endpoint_url": AWS_S3_ENDPOINT_URL,
-            "region_name": AWS_S3_REGION_NAME,
-            "signature_version": AWS_S3_SIGNATURE_VERSION,
-            "file_overwrite": False,
-        },
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"

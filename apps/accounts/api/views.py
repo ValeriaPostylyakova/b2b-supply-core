@@ -13,7 +13,7 @@ from apps.accounts.api.serializers import (
     UsersViewSetSerializer,
 )
 from apps.organizations.api.permissions import IsOrganizationAdmin
-from config import settings
+from config.settings import base as settings
 
 User = get_user_model()
 
