@@ -5,7 +5,12 @@ from rest_framework.views import APIView
 
 from apps.orders.models.order import Order
 from apps.orders.services.order_invoice import InvoiceService
-from apps.organizations.api.permissions import IsSupplier
+from apps.organizations.api.permissions import (
+    IsSupplierAdminOwner,
+    IsSupplierManagerOwner,
+)
+
+IsSupplier = IsSupplierAdminOwner | IsSupplierManagerOwner
 
 
 class OrderInvoiceView(APIView):

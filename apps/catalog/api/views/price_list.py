@@ -3,7 +3,7 @@ from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.api.permissions import IsSupplierAdminRole
+from apps.catalog.api.permissions import IsSupplierAdminOrganization
 from apps.catalog.api.serializers.price_list import (
     PriceListImportCreateSerializer,
     PriceListImportStatusSerializer,
@@ -17,7 +17,7 @@ from apps.organizations.api.permissions import (
 
 
 class PriceListPresignedUrlAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminRole()]
+    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminOrganization]
 
     def post(self, request):
         serializer = PriceListPresignedUrlRequestSerializer(data=request.data)
@@ -29,7 +29,7 @@ class PriceListPresignedUrlAPIView(APIView):
 
 
 class PriceListCreateAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminRole]
+    permission_classes = [permissions.IsAuthenticated, IsSupplierAdminOrganization]
 
     def post(self, request):
         serializer = PriceListImportCreateSerializer(data=request.data)

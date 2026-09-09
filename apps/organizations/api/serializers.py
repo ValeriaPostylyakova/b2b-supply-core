@@ -8,9 +8,30 @@ class OrganizationShortSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ["id", "name"]
+        fields = [
+            "id",
+            "name",
+            "type",
+        ]
+
+        read_only_fields = ["id", "type"]
 
 
 class OrganizationBaseSerializer(OrganizationShortSerializer):
+    inn = serializers.CharField(max_length=12)
+    kpp = serializers.CharField(max_length=9)
+
     class Meta(OrganizationShortSerializer.Meta):
-        fields = OrganizationShortSerializer.Meta.fields + ["type"]
+        fields = OrganizationShortSerializer.Meta.fields + [
+            "inn",
+            "kpp",
+            "legal_address",
+            "description",
+            "verification_status",
+            "created_at",
+        ]
+
+        read_only_fields = OrganizationShortSerializer.Meta.read_only_fields + [
+            "verification_status",
+            "created_at",
+        ]

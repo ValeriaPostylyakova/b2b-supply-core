@@ -27,7 +27,12 @@ class BaseOrganizationPermission(BasePermission):
     def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         user = request.user
         obj_org = getattr(obj, self.org_field, None)
-        return bool(obj_org and obj_org == getattr(user, "organization", None))
+        status_org = getattr(obj_org, "verification_status", None)
+        return bool(
+            obj_org
+            and obj_org == getattr(user, "organization", None)
+            and status_org == "VERIFIED"
+        )
 
 
 class IsSupplierAdminOwner(BaseOrganizationPermission):
@@ -57,3 +62,8 @@ class IsBuyerManagerOwner(BaseOrganizationPermission):
 
 IsBuyer = OR(IsBuyerAdminOwner(), IsBuyerManagerOwner())
 IsSupplier = OR(IsSupplierAdminOwner(), IsSupplierManagerOwner())
+
+
+class IsActiveUserOrganization(BasePermission):
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        return bool(request.user.is_active)

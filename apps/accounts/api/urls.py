@@ -1,21 +1,19 @@
-from django.urls import path, URLResolver, URLPattern
+from django.urls import URLPattern, URLResolver, path
 from rest_framework.routers import DefaultRouter
 
 from apps.accounts.api.views import (
+    AccountProfileAPIView,
     CookieTokenObtainView,
     CookieTokenRefreshView,
-    MeView,
-    UsersViewSet,
 )
 
 router = DefaultRouter()
 
-router.register("auth/users", UsersViewSet, basename="users")
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("auth/token/", CookieTokenObtainView.as_view(), name="token_obtain"),
     path("auth/token/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
-    path("auth/me/", MeView.as_view(), name="me"),
+    path("accounts/profile/", AccountProfileAPIView.as_view(), name="profile"),
 ]
 
 urlpatterns += router.urls

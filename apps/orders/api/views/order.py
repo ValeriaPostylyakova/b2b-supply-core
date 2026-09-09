@@ -6,7 +6,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from apps.orders.api.filters import OrderFilter
 from apps.orders.api.paginations import OrderNumberPagination
-from apps.orders.api.permissions import IsNotWarehouseRole, IsOrderParticipant
+from apps.orders.api.permissions import IsNotWarehouseRole
 from apps.orders.api.serializers.order import (
     FileDocumentSerializer,
     OrderCreateSerializer,
@@ -37,8 +37,6 @@ class OrderViewSet(ModelViewSet):
             return [permissions.IsAdminUser()]
         elif self.action in ["create"]:
             return [IsBuyer]
-        elif self.action in ["cancel", "documents", "reports"]:
-            return [IsOrderParticipant]
         elif self.action in ["confirm"]:
             return [IsSupplier]
 

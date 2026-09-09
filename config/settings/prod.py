@@ -31,36 +31,6 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in cors_raw.split(",") if origin.strip()
 ]
 
-AWS_ACCESS_KEY_ID = os.getenv("S3_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("S3_SECRET")
-AWS_STORAGE_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
-AWS_S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
-AWS_S3_REGION_NAME = "ru-central1"
-AWS_S3_SIGNATURE_VERSION = "s3v4"
-AWS_QUERYSTRING_EXPIRE = 1800
-AWS_S3_VERIFY = False
-AWS_AUTO_CREATE_BUCKET = False
-
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "access_key": AWS_ACCESS_KEY_ID,
-            "secret_key": AWS_SECRET_ACCESS_KEY,
-            "bucket_name": AWS_STORAGE_BUCKET_NAME,
-            "endpoint_url": AWS_S3_ENDPOINT_URL,
-            "region_name": AWS_S3_REGION_NAME,
-            "signature_version": AWS_S3_SIGNATURE_VERSION,
-            "file_overwrite": False,
-        },
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", default="staticfiles")
-MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
 
 LOGGING = {
     "version": 1,

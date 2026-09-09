@@ -33,7 +33,7 @@ EXPECTED_FIELDS = {
 }
 
 
-@shared_task(bind=True, time_limit=1800)
+@shared_task(name="catalog.process_price_list_import", bind=True, time_limit=1800)
 def process_price_list_import_task(self, import_id: int) -> str:
     logger.info(
         "Старт задачи импорта прайс-листа #%s",

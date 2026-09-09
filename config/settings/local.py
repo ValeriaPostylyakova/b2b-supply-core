@@ -15,8 +15,23 @@ DATABASES = {
     }
 }
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+
+CELERY_TASK_QUEUES = {
+    "default": {},
+    "high_priority": {},
+    "heavy_tasks": {},
+}
+
+
+CELERY_TASK_ROUTES = {
+    "catalog.process_price_list_import": {"queue": "heavy_tasks"},
+    "orders.generate_invoice": {"queue": "heavy_tasks"},
+}
+
+
+CELERY_TASK_DEFAULT_QUEUE = "default"
 
 STORAGES = {
     "default": {
@@ -54,4 +69,15 @@ LOGGING = {
     "loggers": {
         "": {"handlers": ["console"], "level": "INFO"},
     },
+}
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
 }

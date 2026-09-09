@@ -33,12 +33,22 @@ def seed_base_data(org_count):
 
     for _ in range(org_count):
         supplier = Organization.objects.create(
-            name=f"ООО {fake.company()} (Тест)", type=Organization.Types.SUPPLIER
+            name=f"ООО {fake.company()} (Тест)",
+            type=Organization.Types.SUPPLIER,
+            inn=fake.unique.random_int(min=1000000000, max=9999999999),
+            kpp=fake.unique.random_int(min=100000000, max=999999999),
+            legal_address=fake.address(),
+            verification_status=Organization.VerificationStatus.VERIFIED,
         )
         suppliers.append(supplier)
 
         buyer = Organization.objects.create(
-            name=f"ИП {fake.company()} (Тест)", type=Organization.Types.BUYER
+            name=f"ИП {fake.company()} (Тест)",
+            type=Organization.Types.BUYER,
+            inn=fake.unique.random_int(min=1000000000, max=9999999999),
+            kpp=fake.unique.random_int(min=100000000, max=999999999),
+            legal_address=fake.address(),
+            verification_status=random.choice(Organization.VerificationStatus.values),
         )
         buyers.append(buyer)
 

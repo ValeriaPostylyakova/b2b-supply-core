@@ -17,11 +17,11 @@ services:
     <<: *django-common
     ports:
       - "8000:8000"
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --graceful-timeout 10 --reload
+    command: python manage.py runserver 0.0.0.0:8000
 
   celery_worker:
     <<: *django-common
-    command: celery -A config worker --loglevel=info --watch
+    command: watchfiles --filter python "celery -A config worker --loglevel=info --concurrency=1 -Q high_priority,default,heavy_tasks"
 
   celery_beat:
     <<: *django-common
@@ -39,7 +39,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5433:5432" 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -51,15 +51,13 @@ services:
     restart: always
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
 
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
     restart: always
     ports:
       - "9000:9000"
-      - "9001:9001"
+      - "9001:9001" 
     environment:
       MINIO_ROOT_USER: ${S3_KEY_ID}
       MINIO_ROOT_PASSWORD: ${S3_SECRET}

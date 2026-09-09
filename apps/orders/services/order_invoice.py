@@ -1,3 +1,6 @@
+import logging
+import time
+
 from celery.result import AsyncResult
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -7,18 +10,23 @@ from apps.orders.models.file_documents import FileDocument
 from apps.orders.models.order import Order
 from apps.orders.tasks.order_invoice import generate_order_invoice
 
+logger = logging.getLogger(__name__)
+
 
 class InvoiceService:
     @staticmethod
     def generate_invoice(order_id, order_status):
-        if order_status != Order().StatusChoices.CONFIRMED:
-            raise ValidationError(
-                {
-                    "detail": "Счет может быть сформирован только для подтвержденного заказа."
-                }
-            )
+        if order_status != Order.StatusChoices.CONFIRMED:
+            raise ValidationError({"detail": "Счет может быть сформирован..."})
+
+        start_time = time.time()
+        logger.info("Отправка задачи в Celery...")
 
         task = generate_order_invoice.delay(order_id)
+
+        logger.info(
+            f"Задача отправлена за {time.time() - start_time} сек. ID: {task.id}"
+        )
         return task.id
 
     @staticmethod

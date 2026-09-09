@@ -1,18 +1,14 @@
 from django.contrib.auth import get_user_model
-from rest_framework import permissions, status
+from rest_framework import permissions
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.accounts.api.serializers import (
     CustomTokenObtainPairSerializer,
-    UserDetailSerializer,
-    UsersViewCreateSerializer,
-    UsersViewSetSerializer,
+    ProfileSerializer,
 )
-from apps.organizations.api.permissions import IsOrganizationAdmin
 from config.settings import base as settings
 
 User = get_user_model()
@@ -48,34 +44,10 @@ class CookieTokenRefreshView(TokenRefreshView):
         return super().post(request, *args, **kwargs)
 
 
-class MeView(APIView):
+class AccountProfileAPIView(RetrieveUpdateAPIView):
+    queryset = User.objects.all().select_related("organization")
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ProfileSerializer
 
-    def get(self, request: Request) -> Response:
-        user = User.objects.select_related("organization").get(id=request.user.id)
-        serializer = UserDetailSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class UsersViewSet(ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated, IsOrganizationAdmin]
-    lookup_field = "external_id"
-
-    def get_queryset(self):
-        return User.objects.select_related("organization").filter(
-            organization=self.request.user.organization
-        )
-
-    def get_serializer_class(self):
-        if self.action in ["create", "update", "partial_update"]:
-            return UsersViewCreateSerializer
-        return UsersViewSetSerializer
-
-    def perform_create(self, serializer):
-        validated_data = serializer.validated_data
-        organization = self.request.user.organization
-        User.objects.create_user(**validated_data, organization=organization)
-
-    def perform_destroy(self, instance):
-        instance.is_active = False
-        instance.save()
+    def get_object(self):
+        return self.request.user
