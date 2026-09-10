@@ -1,14 +1,15 @@
+from django.conf import settings
 from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class PublicMediaStorage(S3Boto3Storage):
-    location = "public"
+    bucket_name = settings.AWS_PUBLIC_BUCKET_NAME
     querystring_auth = False
     default_acl = "public-read"
 
 
 class PrivateMediaStorage(S3Boto3Storage):
-    location = "private"
+    bucket_name = settings.AWS_PRIVATE_BUCKET_NAME
     querystring_auth = True
     custom_domain = False
 

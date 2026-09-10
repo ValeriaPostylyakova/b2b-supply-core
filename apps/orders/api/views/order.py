@@ -7,8 +7,8 @@ from rest_framework.viewsets import ModelViewSet
 from apps.orders.api.filters import OrderFilter
 from apps.orders.api.paginations import OrderNumberPagination
 from apps.orders.api.permissions import IsNotWarehouseRole
+from apps.orders.api.serializers.file_document import FileDocumentSerializer
 from apps.orders.api.serializers.order import (
-    FileDocumentSerializer,
     OrderCreateSerializer,
     OrderDetailSerializer,
     OrderListSerializer,

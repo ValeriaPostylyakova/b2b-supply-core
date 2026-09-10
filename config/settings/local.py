@@ -35,7 +35,10 @@ CELERY_TASK_DEFAULT_QUEUE = "default"
 
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "config.storages.PublicMediaStorage",
+    },
+    "private": {
+        "BACKEND": "config.storages.PrivateMediaStorage",
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",

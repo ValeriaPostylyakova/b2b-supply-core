@@ -2,6 +2,10 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from imagekit.models import ProcessedImageField
+from imagekit.processors import ResizeToFit
+
+from apps.accounts.services.user_avatar_upload_path import AccountService
 
 
 class User(AbstractUser):
@@ -30,8 +34,12 @@ class User(AbstractUser):
     )
 
     username = models.CharField(unique=True)
-    avatar = models.ImageField(upload_to="accounts/avatars/", null=True, blank=True)
-
+    avatar = ProcessedImageField(
+        upload_to=AccountService.user_avatar_upload_path,
+        processors=[ResizeToFit(500, 500)],
+        format="JPEG",
+        options={"quality": 85},
+    )
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name", "username"]
 

@@ -5,7 +5,7 @@ from celery.result import AsyncResult
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 
-from apps.orders.api.serializers.order import FileDocumentSerializer
+from apps.orders.api.serializers.file_document import FileDocumentSerializer
 from apps.orders.models.file_documents import FileDocument
 from apps.orders.models.order import Order
 from apps.orders.tasks.order_invoice import generate_order_invoice

@@ -4,10 +4,9 @@ from apps.catalog.api.serializers.product import ProductStockSerializer
 from apps.catalog.api.serializers.warehouse import WarehouseStockSerializer
 from apps.catalog.models.product import Product
 from apps.catalog.models.warehouse import Warehouse
-from apps.orders.models import FileDocument, Order, OrderItem
+from apps.orders.models import Order, OrderItem
 from apps.organizations.api.serializers import OrganizationShortSerializer
 from apps.organizations.models import Organization
-from config.storages import PrivateMediaStorage
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -131,32 +130,3 @@ class OrderReportsSerializer(serializers.Serializer):
     average_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     min_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     max_order_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-
-
-class FileDocumentSerializer(serializers.ModelSerializer):
-    download_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = FileDocument
-        fields = [
-            "id",
-            "document_type",
-            "storage_key",
-            "original_name",
-            "content_type",
-            "size",
-            "download_url",
-        ]
-
-    def get_download_url(self, obj):
-        storage = PrivateMediaStorage()
-
-        from urllib.parse import quote
-
-        filename = quote(obj.original_name or "document.pdf")
-        content_disposition = f"attachment; filename*=UTF-8''{filename}"
-
-        return storage.url(
-            obj.storage_key,
-            parameters={"ResponseContentDisposition": content_disposition},
-        )

@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.accounts.api.serializers import (
     CustomTokenObtainPairSerializer,
-    ProfileSerializer,
+    MeSerializer,
 )
 from config.settings import base as settings
 
@@ -44,10 +44,10 @@ class CookieTokenRefreshView(TokenRefreshView):
         return super().post(request, *args, **kwargs)
 
 
-class AccountProfileAPIView(RetrieveUpdateAPIView):
+class MeAPIView(RetrieveUpdateAPIView):
     queryset = User.objects.all().select_related("organization")
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = ProfileSerializer
+    serializer_class = MeSerializer
 
     def get_object(self):
         return self.request.user
