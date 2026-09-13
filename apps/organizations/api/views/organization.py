@@ -5,7 +5,9 @@ from apps.organizations.api.permissions import (
     IsActiveUserOrganization,
     IsOrganizationAdmin,
 )
-from apps.organizations.api.serializers import OrganizationBaseSerializer
+from apps.organizations.api.serializers import (
+    OrganizationBaseSerializer,
+)
 from apps.organizations.models import Organization
 
 

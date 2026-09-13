@@ -11,6 +11,7 @@ from apps.catalog.api.serializers.warehouse import (
 from apps.catalog.models.warehouse import Warehouse
 from apps.organizations.api.permissions import (
     IsSupplierAdminOwner,
+    IsVerifyOrganization,
 )
 
 
@@ -26,7 +27,7 @@ class WarehouseViewSet(ModelViewSet):
     def get_permissions(self):
         base_permissions = super().get_permissions()
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            base_permissions.append(IsSupplierAdminOwner())
+            base_permissions.extend([IsSupplierAdminOwner(), IsVerifyOrganization()])
         return base_permissions
 
     def get_queryset(self):

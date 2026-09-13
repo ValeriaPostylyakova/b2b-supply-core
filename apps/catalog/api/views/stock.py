@@ -14,29 +14,31 @@ from apps.catalog.models.stock import Stock
 from apps.organizations.api.permissions import (
     IsSupplierAdminOwner,
     IsSupplierManagerOwner,
+    IsVerifyOrganization,
     IsWarehouseManagerOwner,
+)
+
+ALLOWED_ROLE_PERMISSIONS = (
+    IsSupplierAdminOwner | IsSupplierManagerOwner | IsWarehouseManagerOwner
 )
 
 
 class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
     queryset = Stock.objects.all().select_related("warehouse")
     serializer_class = StockListSerializer
-    permission_classes = [
-        permissions.IsAuthenticated,
-        IsSupplierAdminOwner | IsSupplierManagerOwner | IsWarehouseManagerOwner,
-    ]
+    permission_classes = [permissions.IsAuthenticated, ALLOWED_ROLE_PERMISSIONS]
     pagination_class = StockNumberPagination
 
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_permissions(self):
         if self.action == "partial_update":
-            return [
-                (
-                    permissions.IsAuthenticated
-                    & (IsSupplierAdminOwner | IsWarehouseManagerOwner)
-                )()
-            ]
+            composed_permission = (
+                permissions.IsAuthenticated
+                & (IsSupplierAdminOwner | IsWarehouseManagerOwner)
+                & IsVerifyOrganization
+            )
+            return [composed_permission()]
         return super().get_permissions()
 
     def get_serializer_class(self):

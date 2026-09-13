@@ -19,13 +19,18 @@ from apps.orders.services.order import OrderService
 from apps.organizations.api.permissions import (
     IsBuyer,
     IsSupplier,
+    IsVerifyOrganization,
 )
 
 
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.select_related("buyer", "supplier").all()
     serializer_class = OrderListSerializer
-    permission_classes = [permissions.IsAuthenticated, IsNotWarehouseRole]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsNotWarehouseRole,
+        IsVerifyOrganization,
+    ]
     pagination_class = OrderNumberPagination
     filterset_class = OrderFilter
 

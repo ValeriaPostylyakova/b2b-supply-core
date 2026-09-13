@@ -38,34 +38,3 @@ class Organization(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.type})"
-
-
-class OrganizationInvite(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "PENDING", "На рассмотрении"
-        ACCEPTED = "ACCEPTED", "Принято"
-        EXPIRED = "EXPIRED", "Истекло"
-        REVOKED = "REVOKED", "Отозвано"
-
-    organization = models.ForeignKey(
-        "organizations.Organization",
-        on_delete=models.CASCADE,
-        related_name="invites",
-    )
-    email = models.EmailField()
-    role = models.CharField(max_length=50)
-    token_hash = models.CharField(max_length=255, unique=True)
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING,
-    )
-    invited_by = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="sent_invites",
-    )
-    expires_at = models.DateTimeField()
-    accepted_at = models.DateTimeField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)

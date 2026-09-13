@@ -84,3 +84,5 @@ CACHES = {
         },
     }
 }
+
+REDIS_BLACKLIST_URL = "redis://redis/2"

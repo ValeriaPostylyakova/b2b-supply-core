@@ -11,7 +11,7 @@ from apps.catalog.api.serializers.product import (
 )
 from apps.catalog.models.product import Product
 from apps.catalog.selectors.product import ProductSelector
-from apps.organizations.api.permissions import IsSupplier
+from apps.organizations.api.permissions import IsSupplier, IsVerifyOrganization
 
 
 class ProductViewSet(ModelViewSet):
@@ -34,7 +34,7 @@ class ProductViewSet(ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [permissions.IsAuthenticated(), IsSupplier]
+            return [permissions.IsAuthenticated(), IsSupplier, IsVerifyOrganization()]
         return super().get_permissions()
 
     def get_queryset(self):
