@@ -39,6 +39,8 @@ class User(AbstractUser):
         processors=[ResizeToFit(500, 500)],
         format="JPEG",
         options={"quality": 85},
+        null=True,
+        blank=True,
     )
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name", "username"]

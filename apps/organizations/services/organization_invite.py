@@ -1,9 +1,9 @@
 import hashlib
 import secrets
-from time import timezone
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.organizations.models.organization_invite import OrganizationInvite
@@ -18,10 +18,20 @@ class OrganizationInviteService:
         return hashlib.sha256(token.encode()).hexdigest()
 
     @staticmethod
+    @transaction.atomic
     def create_invite(email, organization, role):
         if User.objects.filter(email=email, organization=organization).exists():
             raise ValidationError(
                 {"email": "Этот пользователь уже является участником организации."}
+            )
+
+        if OrganizationInvite.objects.filter(
+            email=email,
+            organization=organization,
+            status=OrganizationInvite.Status.PENDING,
+        ).exists():
+            raise ValidationError(
+                {"email": "У данного пользователя есть действующее приглашение."}
             )
 
         raw_token = secrets.token_urlsafe(32)
@@ -42,8 +52,8 @@ class OrganizationInviteService:
 
     @staticmethod
     @transaction.atomic
-    def accept_invite(token: str):
-        token_hash = OrganizationInviteService._hash_token(token)
+    def accept_invite(raw_token: str):
+        token_hash = OrganizationInviteService._hash_token(raw_token)
 
         try:
             invite = OrganizationInvite.objects.select_for_update().get(
@@ -65,8 +75,10 @@ class OrganizationInviteService:
         user, created = User.objects.get_or_create(
             email=invite.email,
             username=invite.email,
-            organization=invite.organization,
-            role=invite.role,
+            defaults={
+                "organization": invite.organization,
+                "role": invite.role,
+            },
         )
 
         if not created:
@@ -77,4 +89,4 @@ class OrganizationInviteService:
         invite.status = OrganizationInvite.Status.ACCEPTED
         invite.save(update_fields=["status"])
 
-        return user
+        return user, created

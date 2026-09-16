@@ -21,3 +21,7 @@ class OrganizationInviteCreateSerializer(serializers.Serializer):
 
 class OrganizationAcceptInviteSerializer(serializers.Serializer):
     token = serializers.CharField(required=True)
+
+
+class OrganizationInviteRegisterSerializer(serializers.Serializer):
+    pass

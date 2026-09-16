@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Приглашение в команду</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f6f8; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" max-width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); overflow: hidden;">
+                    <tr>
+                        <td height="6" style="background-color: #6366f1; line-height: 6px; font-size: 6px;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px 32px;">
+                            
+                            <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; line-height: 32px; color: #0f172a; text-align: center;">
+                                Вас пригласили в команду!
+                            </h1>
+
+                            <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 24px; color: #475569; text-align: center;">
+                                Вы получили приглашение присоединиться к организации <strong style="color: #0f172a;">{{ organization_name }}</strong>.
+                            </p>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 32px auto;">
+                                <tr>
+                                    <td align="center" style="border-radius: 8px; background-color: #6366f1;">
+                                        <a href="{{ accept_url }}" target="_blank" style="border: 12px solid #6366f1; border-left: 24px solid #6366f1; border-right: 24px solid #6366f1; display: inline-block; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">
+                                            Принять приглашение
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center; margin-top: 32px;">
+                                <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b; font-weight: 500;">
+                                    Если кнопка не работает, введите код вручную:
+                                </p>
+                                <div style="font-family: 'Courier New', Courier, monospace; font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #334155; background-color: #ffffff; border: 1px dashed #cbd5e1; display: inline-block; padding: 8px 16px; border-radius: 4px;">
+                                    {{ raw_token }}
+                                </div>
+                            </div>
+                            <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 18px; color: #94a3b8; text-align: center;">
+                                Если вы не ожидали этого приглашения, просто проигнорируйте это письмо.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 16px;">
+                                Это автоматическое уведомление. Пожалуйста, не отвечайте на него.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+                
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

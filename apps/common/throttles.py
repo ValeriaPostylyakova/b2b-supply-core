@@ -50,3 +50,42 @@ class LoginRateThrottle(BaseThrottle):
             return redis.ttl(self.wait_key)
 
         return None
+
+
+class InviteAcceptRateThrottle(BaseThrottle):
+    ip_limit = 30
+    token_limit = 5
+    window = 60
+
+    def allow_request(self, request, view):
+        ip = self.get_ident(request)
+        self.ip_key = f"rate-limit:invite:ip:{ip}"
+
+        self.ip_limiter = RedisRateLimiter(limit=self.ip_limit, window=self.window)
+
+        if not self.ip_limiter.is_allowed(self.ip_key):
+            self.wait_key = self.ip_key
+            return False
+
+        token = request.data.get("token")
+        if token:
+            token = token.strip()
+            token_hash = hashlib.sha256(token.encode()).hexdigest()
+            self.token_key = f"rate-limit:invite:token:{token_hash}"
+
+            self.token_limiter = RedisRateLimiter(
+                limit=self.token_limit, window=self.window
+            )
+
+            if not self.token_limiter.is_allowed(self.token_key):
+                self.wait_key = self.token_key
+                return False
+
+        return True
+
+    def wait(self):
+        if hasattr(self, "wait_key"):
+            redis = get_redis_connection("default")
+            ttl = redis.ttl(self.wait_key)
+            return max(0, ttl) if ttl > 0 else self.window
+        return None

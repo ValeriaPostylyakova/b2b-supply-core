@@ -4,11 +4,7 @@ from django.db import models
 
 
 class OrganizationInvite(models.Model):
-    external_id = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-    )
+    external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "На рассмотрении"

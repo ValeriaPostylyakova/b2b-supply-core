@@ -189,3 +189,13 @@ STORAGES = {
 STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", default="staticfiles")
 
 MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_PUBLIC_BUCKET_NAME}/"
+
+FRONTEND_URL = "http://localhost:3000"
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.yandex.ru"
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = "valeria.postylyakova@yandex.ru"
+EMAIL_HOST_PASSWORD = "kqimabqcmovrbobe"
+DEFAULT_FROM_EMAIL = "valeria.postylyakova@yandex.ru"
