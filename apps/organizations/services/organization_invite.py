@@ -8,7 +8,12 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.organizations.models.organization_invite import OrganizationInvite
-from apps.organizations.tasks.organization_invite import send_invite_email_task
+from apps.organizations.tasks.organization_invite.send_invite_email import (
+    send_invite_email_task,
+)
+from apps.organizations.tasks.organization_invite.send_welcome_team_email import (
+    send_welcome_team_email_task,
+)
 
 User = get_user_model()
 
@@ -126,6 +131,8 @@ class OrganizationInviteService:
 
                 user.is_active = True
                 user.save()
+
+                send_welcome_team_email_task.delay_on_commit(user.id, user.organization_id)
 
         except User.DoesNotExist:
             raise ValidationError({"registration_token": "Пользователь не найден."})

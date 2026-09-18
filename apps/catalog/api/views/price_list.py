@@ -1,6 +1,7 @@
 from rest_framework import permissions, status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.catalog.api.permissions import IsSupplierAdminVerifyOrganization
@@ -36,6 +37,9 @@ class PriceListCreateAPIView(APIView):
         permissions.IsAuthenticated,
         IsSupplierAdminVerifyOrganization,
     ]
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "excel_upload"
 
     def post(self, request):
         serializer = PriceListImportCreateSerializer(data=request.data)

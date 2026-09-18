@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.orders.models.order import Order
@@ -15,6 +16,9 @@ IsSupplier = IsSupplierAdminOwner | IsSupplierManagerOwner
 
 class OrderInvoiceView(APIView):
     permission_classes = [IsSupplier]
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "pdf_generation"
 
     def post(self, request, external_id):
         order = get_object_or_404(Order, external_id=external_id)

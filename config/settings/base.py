@@ -111,6 +111,10 @@ REST_FRAMEWORK = {
         "apps.common.renderers.ApiJSONRenderer",
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "pdf_generation": "2/min",
+        "excel_upload": "5/hour",
+    },
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",

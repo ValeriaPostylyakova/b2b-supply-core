@@ -17,13 +17,15 @@ logger = logging.getLogger(__name__)
     max_retries=3,
     default_retry_delay=60,
 )
-def send_invite_email_task(self, invite_id: int, raw_token: str):
+def send_invite_email_task(self, invite_id, raw_token):
     try:
         invite = OrganizationInvite.objects.select_related("organization").get(
             id=invite_id
         )
     except OrganizationInvite.DoesNotExist:
-        logger.error(f"Invite with id {invite_id} not found. Task aborted.")
+        logger.error(
+            f"Приглашение с ID {invite_id} не найдено в базе данных. Задача отменена."
+        )
         return False
 
     context = {
@@ -46,13 +48,15 @@ def send_invite_email_task(self, invite_id: int, raw_token: str):
         mail.send(fail_silently=False)
 
         logger.info(
-            f"Invite email successfully sent to {to_email} (Invite ID: {invite_id})"
+            f"Письмо с приглашением успешно отправлено на {to_email} (ID приглашения: {invite_id})"
         )
         return True
 
     except Exception as exc:
+        current_retry = self.request.retries
+
         logger.warning(
-            f"Failed to send invite email to {to_email}. "
-            f"Retrying ({self.request.retries}/{self.max_retries})... Error: {exc}"
+            f"Не удалось отправить письмо на {to_email}. "
+            f"Попытка {current_retry + 1} из {self.max_retries + 1}. Ошибка: {exc}"
         )
         raise self.retry(exc=exc)

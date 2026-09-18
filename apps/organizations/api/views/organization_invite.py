@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
-from apps.common.throttles import InviteAcceptRateThrottle
 from apps.organizations.api.permissions import (
     IsOrganizationAdmin,
 )
@@ -24,7 +23,6 @@ REGISTRATION_SALT = "user-complete-registration-salt"
 
 class InviteAcceptAPIView(APIView):
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [InviteAcceptRateThrottle]
 
     def post(self, request):
         serializer = OrganizationAcceptInviteSerializer(data=request.data)
@@ -97,3 +95,7 @@ class OrganizationInviteViewSet(
             status=status.HTTP_201_CREATED,
         )
         return response
+
+    def perform_destroy(self, instance):
+        instance.status = OrganizationInvite.Status.REVOKED
+        instance.save()
