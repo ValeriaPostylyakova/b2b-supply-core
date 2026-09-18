@@ -2,6 +2,7 @@ import hashlib
 import secrets
 
 from django.contrib.auth import get_user_model
+from django.core import signing
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -19,7 +20,10 @@ class OrganizationInviteService:
 
     @staticmethod
     @transaction.atomic
-    def create_invite(email, organization, role):
+    def create_invite(validated_data, organization):
+        email = validated_data["email"]
+        role = validated_data["role"]
+
         if User.objects.filter(email=email, organization=organization).exists():
             raise ValidationError(
                 {"email": "Этот пользователь уже является участником организации."}
@@ -74,10 +78,11 @@ class OrganizationInviteService:
 
         user, created = User.objects.get_or_create(
             email=invite.email,
-            username=invite.email,
             defaults={
                 "organization": invite.organization,
+                "username": invite.email,
                 "role": invite.role,
+                "is_active": False,
             },
         )
 
@@ -87,6 +92,42 @@ class OrganizationInviteService:
             user.save(update_fields=["organization", "role"])
 
         invite.status = OrganizationInvite.Status.ACCEPTED
-        invite.save(update_fields=["status"])
+        invite.accepted_at = timezone.now()
+        invite.save(update_fields=["status", "accepted_at"])
 
         return user, created
+
+    @staticmethod
+    def register_invited_user(registration_token, reg_salt, **user_data):
+        try:
+            data = signing.loads(registration_token, salt=reg_salt, max_age=900)
+            user_id = data.get("user_id")
+        except signing.SignatureExpired:
+            raise ValidationError(
+                {
+                    "registration_token": "Срок действия токена регистрации истек. Запросите приглашение заново."
+                }
+            )
+        except signing.BadSignature:
+            raise ValidationError(
+                {"registration_token": "Недействительный токен регистрации."}
+            )
+
+        try:
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(id=user_id)
+                password = user_data.pop("password", None)
+
+                for field, value in user_data.items():
+                    setattr(user, field, value)
+
+                if password:
+                    user.set_password(password)
+
+                user.is_active = True
+                user.save()
+
+        except User.DoesNotExist:
+            raise ValidationError({"registration_token": "Пользователь не найден."})
+
+        return user
