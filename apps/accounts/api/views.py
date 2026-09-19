@@ -83,6 +83,13 @@ class LogoutAPIView(APIView):
             return Response({"detail": "Invalid or expired token."}, status=400)
 
 
+class ResetPasswordAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        pass
+
+
 class MeAPIView(RetrieveUpdateAPIView):
     queryset = User.objects.all().select_related("organization")
     permission_classes = [permissions.IsAuthenticated]

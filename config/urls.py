@@ -8,7 +8,8 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.accounts.api.urls")),
     path("api/v1/organizations/", include("apps.organizations.api.urls")),
     path("api/v1/", include("apps.catalog.api.urls")),
-    path("api/v1/", include("apps.orders.api.urls")),
+    path("api/v1/orders/", include("apps.orders.api.urls")),
+    path("api/v1/", include("apps.payments.api.urls")),
 ]
 
 if settings.DEBUG:

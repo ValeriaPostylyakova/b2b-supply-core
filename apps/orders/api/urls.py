@@ -6,16 +6,16 @@ from apps.orders.api.views.order_invoice import OrderInvoiceView
 
 router = DefaultRouter()
 
-router.register("orders", OrderViewSet, basename="orders")
+router.register("", OrderViewSet, basename="orders")
 
 urlpatterns = [
     path(
-        "orders/<str:external_id>/invoice/",
+        "<str:external_id>/invoice/",
         OrderInvoiceView.as_view(),
         name="order-invoice-create",
     ),
     path(
-        "orders/invoice-status/<str:task_id>/",
+        "invoice-status/<str:task_id>/",
         OrderInvoiceView.as_view(),
         name="order-invoice-status",
     ),
