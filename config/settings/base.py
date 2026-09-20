@@ -111,9 +111,18 @@ REST_FRAMEWORK = {
         "apps.common.renderers.ApiJSONRenderer",
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {
+        "user": "100/min",
+        "anon": "20/min",
+        "otp_request": "1/1m",
+        "otp_verify": "5/5m",
         "pdf_generation": "2/min",
         "excel_upload": "5/hour",
+        "login": "5/m",
     },
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
     "DEFAULT_PARSER_CLASSES": [

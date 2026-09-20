@@ -1,6 +1,7 @@
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -74,3 +75,25 @@ class MeSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+
+class RequestOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    otp = serializers.CharField(min_length=6, max_length=6, required=True)
+    email = serializers.EmailField(required=True)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=255, required=True)
+    new_password = serializers.CharField(
+        write_only=True, required=True, validators=[validate_password]
+    )
+    confirm_password = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        if attrs.get("new_password") != attrs.get("confirm_password"):
+            raise serializers.ValidationError("Пароли не совпадают.")
+        return attrs

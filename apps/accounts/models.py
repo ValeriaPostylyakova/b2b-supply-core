@@ -5,7 +5,7 @@ from django.db import models
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFit
 
-from apps.accounts.services.user_avatar_upload_path import AccountService
+from apps.accounts.services.accounts import AccountService
 
 
 class User(AbstractUser):

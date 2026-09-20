@@ -1,7 +1,6 @@
 from rest_framework import permissions, status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.catalog.api.permissions import IsSupplierAdminVerifyOrganization
@@ -12,6 +11,7 @@ from apps.catalog.api.serializers.price_list import (
 )
 from apps.catalog.models.price_list import PriceListImport
 from apps.catalog.services.price_list import PriceListImportService
+from apps.common.throttles.otp import ExcelUploadRateThrottle
 from apps.organizations.api.permissions import (
     IsSupplierAdminOwner,
 )
@@ -33,13 +33,12 @@ class PriceListPresignedUrlAPIView(APIView):
 
 
 class PriceListCreateAPIView(APIView):
+    throttle_classes = [ExcelUploadRateThrottle]
+
     permission_classes = [
         permissions.IsAuthenticated,
         IsSupplierAdminVerifyOrganization,
     ]
-
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "excel_upload"
 
     def post(self, request):
         serializer = PriceListImportCreateSerializer(data=request.data)

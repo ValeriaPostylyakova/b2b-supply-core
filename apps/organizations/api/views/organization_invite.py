@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
+from apps.common.throttles.otp import OTPRequestRateThrottle
 from apps.organizations.api.permissions import (
     IsOrganizationAdmin,
 )
@@ -22,6 +23,8 @@ REGISTRATION_SALT = "user-complete-registration-salt"
 
 
 class InviteAcceptAPIView(APIView):
+    throttle_classes = [OTPRequestRateThrottle]
+
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):

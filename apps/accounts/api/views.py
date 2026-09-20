@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -11,18 +11,25 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from apps.accounts.api.serializers import (
     CustomTokenObtainPairSerializer,
     MeSerializer,
+    RequestOTPSerializer,
+    ResetPasswordSerializer,
+    VerifyOTPSerializer,
 )
 from apps.accounts.services.auth import AuthService
 from apps.common.jwt_blacklist import JwtBlacklist
-from apps.common.throttles import LoginRateThrottle
+from apps.common.throttles.otp import (
+    LoginRateThrottle,
+    OTPRequestRateThrottle,
+    OTPVerifyRateThrottle,
+)
 from config.settings import base as settings
 
 User = get_user_model()
 
 
 class CookieTokenObtainView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
     throttle_classes = [LoginRateThrottle]
+    serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request: Request, *args, **kwargs) -> Response:
         response = super().post(request, *args, **kwargs)
@@ -83,11 +90,59 @@ class LogoutAPIView(APIView):
             return Response({"detail": "Invalid or expired token."}, status=400)
 
 
+class RequestOTPAPIView(APIView):
+    throttle_classes = [OTPRequestRateThrottle]
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = RequestOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+
+        AuthService.send_otp_email(email)
+
+        return Response(
+            {"detail": "Письмо отправлено на почту."}, status=status.HTTP_200_OK
+        )
+
+
+class VerifyOTPAPIView(APIView):
+    throttle_classes = [OTPVerifyRateThrottle]
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        otp = serializer.validated_data["otp"]
+        email = serializer.validated_data["email"]
+
+        reset_token = AuthService.generate_reset_token(otp, email)
+
+        return Response(
+            {
+                "detail": "Код успешно подтвержден.",
+                "reset_token": reset_token,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class ResetPasswordAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        pass
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data["token"]
+        new_password = serializer.validated_data["new_password"]
+
+        AuthService.reset_password_with_token(token, new_password)
+
+        return Response(
+            {"detail": "Пароль успешно изменен."}, status=status.HTTP_200_OK
+        )
 
 
 class MeAPIView(RetrieveUpdateAPIView):
