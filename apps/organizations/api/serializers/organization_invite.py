@@ -19,6 +19,32 @@ class OrganizationInviteCreateSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     role = serializers.ChoiceField(choices=User.Roles.choices, required=True)
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if not request or not request.user:
+            print(f"Ошибка контекста запроса: {self.context}")
+            raise serializers.ValidationError("Ошибка контекста запроса")
+
+        user = request.user
+        role = attrs.get("role")
+        role_lower = role.lower()
+
+        if user.is_supplier and role_lower.startswith("buyer"):
+            raise serializers.ValidationError(
+                {
+                    "role": "Пользователь с ролью Поставщик не может назначать роли Покупателя."
+                }
+            )
+
+        if user.is_buyer and role_lower.startswith("supplier"):
+            raise serializers.ValidationError(
+                {
+                    "role": "Пользователь с ролью Покупатель не может назначать роли Поставщика."
+                }
+            )
+
+        return attrs
+
 
 class OrganizationAcceptInviteSerializer(serializers.Serializer):
     token = serializers.CharField(required=True)
