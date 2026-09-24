@@ -53,7 +53,7 @@ def setup_cancel_order_data(transactional_db):
         stock=stock,
         quantity=5,
         status=Reservation.Status.ACTIVE,
-        expires_at=timezone.now() + timedelta(days=1),
+        expires_at=timezone.now() + timedelta(minutes=20),
     )
 
     return {

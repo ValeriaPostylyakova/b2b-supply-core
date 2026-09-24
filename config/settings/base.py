@@ -3,6 +3,11 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
+from yookassa import Configuration
+
+Configuration.account_id = os.getenv("YOOKASSA_SHOP_ID")
+Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY")
+
 
 load_dotenv()
 
@@ -206,9 +211,12 @@ MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_PUBLIC_BUCKET_NAME}/"
 FRONTEND_URL = "http://localhost:3000"
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.yandex.ru"
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = "valeria.postylyakova@yandex.ru"
-EMAIL_HOST_PASSWORD = "kqimabqcmovrbobe"
-DEFAULT_FROM_EMAIL = "valeria.postylyakova@yandex.ru"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.yandex.ru")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "True") == "True"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+YOOKASSA_SHOP_ID = "1472589"
+YOOKASSA_SECRET_KEY = "test_aw7Kzd1hiDK5E0DyIPyQNov0v5Bq8KUmwHPKgx2VKZU"

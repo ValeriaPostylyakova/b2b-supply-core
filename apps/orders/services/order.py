@@ -48,11 +48,11 @@ class OrderService:
             buyer=buyer,
             supplier=supplier,
             status=Order.StatusChoices.RESERVED,
-            total_amount=Decimal("0"),
+            total_amount=Decimal(0),
             items_count=len(quantities),
         )
 
-        total_amount = Decimal("0")
+        total_amount = Decimal(0)
 
         for item in items_data:
             product = item["product"]
@@ -81,7 +81,7 @@ class OrderService:
                 stock=stock,
                 quantity=quantity,
                 status=Reservation.Status.ACTIVE,
-                expires_at=timezone.now() + timedelta(days=1),
+                expires_at=timezone.now() + timedelta(minutes=20),
             )
 
         order.total_amount = total_amount

@@ -10,6 +10,7 @@ class Order(models.Model):
     class StatusChoices(models.TextChoices):
         DRAFT = "DRAFT", "Черновик"
         RESERVED = "RESERVED", "Зарезервирован"
+        PAID = "PAID", "Оплачен"
         CONFIRMED = "CONFIRMED", "Подтвержден"
         CANCELLED = "CANCELLED", "Отменен"
         COMPLETED = "COMPLETED", "Выполнен"

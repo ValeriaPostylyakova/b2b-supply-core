@@ -13,7 +13,7 @@ x-django-common: &django-common
       condition: service_started
 
 services:
-  django-server:
+  django_server:
     <<: *django-common
     ports:
       - "8000:8000"
