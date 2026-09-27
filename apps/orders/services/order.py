@@ -91,7 +91,10 @@ class OrderService:
     @staticmethod
     @transaction.atomic
     def cancel_order(order):
-        if order.status not in [Order.StatusChoices.PAID, Order.StatusChoices.RESERVED]:
+        if order.status not in [
+            Order.StatusChoices.DRAFT,
+            Order.StatusChoices.RESERVED,
+        ]:
             raise ValidationError("Данный заказ не может быть отменен")
 
         reservations = Reservation.objects.filter(order=order)
