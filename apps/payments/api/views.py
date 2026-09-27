@@ -6,6 +6,10 @@ from rest_framework.views import APIView
 from yookassa.domain.notification import WebhookNotificationFactory
 
 from apps.orders.models import Order
+from apps.organizations.api.permissions import (
+    IsBuyerAdminOwner,
+    IsBuyerManagerOwner,
+)
 from apps.payments.api.serializers import PaymentInitSerializer
 from apps.payments.infrastructure.locks import redis_webhook_lock
 from apps.payments.services.yookassa_service import YookassaService
@@ -15,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 class InitPaymentView(APIView):
+    permission_classes = [IsBuyerAdminOwner | IsBuyerManagerOwner]
+
     def post(self, request):
         serializer = PaymentInitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

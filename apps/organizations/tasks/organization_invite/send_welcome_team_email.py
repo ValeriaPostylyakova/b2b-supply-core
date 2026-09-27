@@ -1,6 +1,5 @@
-import logging
-
 from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives
@@ -10,7 +9,8 @@ from django.utils.html import strip_tags
 from apps.organizations.models.organization import Organization
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
+
+logger = get_task_logger(__name__)
 
 
 @shared_task(

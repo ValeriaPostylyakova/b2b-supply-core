@@ -1,8 +1,8 @@
-import logging
 from venv import logger
 
 from billiard import SoftTimeLimitExceeded
 from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from weasyprint import HTML
@@ -10,7 +10,7 @@ from weasyprint import HTML
 from apps.orders.models import DocumentTypeChoices, FileDocument, Order
 from config.storages import PrivateMediaStorage
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 @shared_task(

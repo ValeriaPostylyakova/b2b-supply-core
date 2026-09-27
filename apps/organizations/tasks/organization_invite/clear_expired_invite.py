@@ -1,12 +1,11 @@
-import logging
-
 from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.db import transaction
 from django.utils import timezone
 
 from apps.organizations.models.organization_invite import OrganizationInvite
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 @shared_task(name="organizations.clear_expired_invite", bind=True, max_retries=3)

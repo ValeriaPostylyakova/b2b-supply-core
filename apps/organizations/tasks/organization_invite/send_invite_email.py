@@ -1,6 +1,5 @@
-import logging
-
 from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -8,7 +7,7 @@ from django.utils.html import strip_tags
 
 from apps.organizations.models.organization_invite import OrganizationInvite
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 @shared_task(

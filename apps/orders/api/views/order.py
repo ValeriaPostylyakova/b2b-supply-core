@@ -24,7 +24,9 @@ from apps.organizations.api.permissions import (
 
 
 class OrderViewSet(ModelViewSet):
-    queryset = Order.objects.select_related("buyer", "supplier").all()
+    queryset = (
+        Order.objects.select_related("buyer", "supplier").all().order_by("created_at")
+    )
     serializer_class = OrderListSerializer
     permission_classes = [
         permissions.IsAuthenticated,

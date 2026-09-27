@@ -1,87 +1,84 @@
-import logging
-
 from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.db import transaction
-from django.db.models import Case, F, When
-from django.utils import timezone
+from django.db.models import F
 
-from apps.catalog.models.stock import Stock
+from apps.orders.models import Order
 from apps.orders.models.reservation import Reservation
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
-@shared_task(name="orders.clear_expired_reservations", bind=True, max_retries=3)
-def clear_expired_reservations_task(self):
-    now = timezone.now()
-    batch_size = 200
-
+@shared_task(
+    name="orders.clear_expired_reservation",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=5,
+)
+def clear_expired_reservation_task(self, order_id):
     logger.info(
-        "Запуск очистки просроченных броней. Поиск пакета до %s шт.", batch_size
+        f"[Запуск] Задача проверки истечения времени резерва для заказа №{order_id}"
     )
 
-    expired_ids = list(
-        Reservation.objects.filter(
-            status=Reservation.Status.ACTIVE, expires_at__lte=now
-        ).values_list("id", flat=True)[:batch_size]
-    )
-
-    if not expired_ids:
-        logger.info("Просроченных броней не обнаружено. Завершение задачи.")
-        return {"processed": 0}
-
-    logger.info(
-        "Найдено %s потенциально просроченных броней для обработки.", len(expired_ids)
-    )
-
-    processed = 0
     try:
         with transaction.atomic():
-            reservations = list(
-                Reservation.objects.select_for_update(skip_locked=True).filter(
-                    id__in=expired_ids, status=Reservation.Status.ACTIVE
-                )
-            )
+            try:
+                order = Order.objects.select_for_update().get(pk=order_id)
+            except Order.DoesNotExist:
+                logger.error(f"[Ошибка] Заказ №{order_id} не найден в базе данных.")
+                return f"Заказ {order_id} не найден."
 
-            if not reservations:
-                logger.warning(
-                    "Все найденные брони %s уже заблокированы или обработаны в другой транзакции.",
-                    expired_ids,
+            if order.status == Order.StatusChoices.PAID:
+                logger.info(
+                    f"[Пропуск] Заказ №{order_id} уже оплачен. Отмена не требуется."
                 )
-                return {"processed": 0}
+                return f"Заказ {order_id} уже оплачен. Отмена не требуется."
 
-            for reservation in reservations:
-                Stock.objects.filter(id=reservation.stock_id).update(
-                    reserved_quantity=Case(
-                        When(reserved_quantity__lt=reservation.quantity, then=0),
-                        default=F("reserved_quantity") - reservation.quantity,
+            if order.status == Order.StatusChoices.RESERVED:
+                logger.info(
+                    f"[Действие] Время ожидания оплаты истекло. Начинается отмена заказа №{order_id}..."
+                )
+
+                order.status = Order.StatusChoices.CANCELLED
+                order.save()
+                logger.info(f"[Статус] Статус заказа №{order_id} изменен на CANCELLED.")
+
+                reservations = order.reservations.filter(status="active")
+                reservations_count = reservations.count()
+
+                if not reservations_count:
+                    logger.warning(
+                        f"[Предупреждение] У заказа №{order_id} нет активных резерваций для возврата."
                     )
-                )
 
-            current_batch_ids = [r.id for r in reservations]
-            updated = Reservation.objects.filter(id__in=current_batch_ids).update(
-                status=Reservation.Status.EXPIRED
+                for reservation in reservations:
+                    stock = reservation.stock
+
+                    stock.quantity = F("quantity") + reservation.quantity
+                    stock.save()
+
+                    reservation.status = Reservation.Status.EXPIRED
+                    reservation.save()
+
+                    logger.info(
+                        f"[Склад] Товар (Stock ID: {stock.id}) в количестве {reservation.quantity} шт. "
+                        f"возвращен на склад по заказу №{order_id}."
+                    )
+
+                logger.info(
+                    f"[Успех] Заказ №{order_id} успешно отменен. Освобождено позиций: {reservations_count}."
+                )
+                return f"Заказ {order_id} отменен, остатки возвращены на склад."
+
+            logger.info(
+                f"[Пропуск] Заказ №{order_id} имеет статус '{order.status}'. "
+                f"Автоматическая отмена не требуется."
             )
-            processed = updated
+            return f"Заказ {order_id} находится в статусе {order.status}, отмена пропущена."
 
     except Exception as exc:
-        logger.exception(
-            "Ошибка при обработке пакета просроченных броней. ID для обработки: %s. Попытка ретрая...",
-            expired_ids,
+        logger.error(
+            f"[Сбой] Критическая ошибка при обработке заказа №{order_id}: {exc!s}. "
+            f"Попытка повтора задачи №{self.request.retries + 1}."
         )
-        raise self.retry(exc=exc, countdown=min(2**self.request.retries * 5, 60))
-
-    logger.info(
-        "Успешно переведено в статус EXPIRED броней: %s из %s запрошенных.",
-        processed,
-        len(expired_ids),
-    )
-
-    if len(expired_ids) == batch_size:
-        logger.info(
-            "Достигнут лимит пакета (%s). Запуск следующей задачи для обработки оставшихся броней.",
-            batch_size,
-        )
-        clear_expired_reservations_task.apply_async(countdown=0)
-
-    return {"processed": processed}
+        raise self.retry(exc=exc)

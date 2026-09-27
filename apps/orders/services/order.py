@@ -81,7 +81,7 @@ class OrderService:
                 stock=stock,
                 quantity=quantity,
                 status=Reservation.Status.ACTIVE,
-                expires_at=timezone.now() + timedelta(minutes=10),
+                expires_at=timezone.now() + timedelta(hours=1),
             )
 
         order.total_amount = total_amount
@@ -91,10 +91,7 @@ class OrderService:
     @staticmethod
     @transaction.atomic
     def cancel_order(order):
-        if order.status in [
-            Order.StatusChoices.CANCELLED,
-            Order.StatusChoices.CONFIRMED,
-        ]:
+        if order.status not in [Order.StatusChoices.PAID, Order.StatusChoices.RESERVED]:
             raise ValidationError("Данный заказ не может быть отменен")
 
         reservations = Reservation.objects.filter(order=order)
@@ -117,7 +114,7 @@ class OrderService:
 
     @staticmethod
     def confirm_order(order):
-        if order.status != Order.StatusChoices.RESERVED:
+        if order.status != Order.StatusChoices.PAID:
             raise ValidationError("Данный заказ не может быть подтвержден")
 
         order.status = order.StatusChoices.CONFIRMED

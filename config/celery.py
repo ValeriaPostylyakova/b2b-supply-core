@@ -11,10 +11,6 @@ app.autodiscover_tasks()
 
 
 app.conf.beat_schedule = {
-    # "clear_expired_reservations_every_5_minutes": {
-    #     "task": "orders.clear_expired_reservations",
-    #     "schedule": crontab(minute="*/5"),
-    # },
     # "clear_expired_invite_at_3_am": {
     #     "task": "organizations.clear_expired_invite",
     #     "schedule": crontab(hour=3, minute=0),

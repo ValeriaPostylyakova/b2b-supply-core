@@ -1,7 +1,7 @@
-import logging
 import time
 
 from celery.result import AsyncResult
+from celery.utils.log import get_task_logger
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 
@@ -10,7 +10,7 @@ from apps.orders.models.file_documents import FileDocument
 from apps.orders.models.order import Order
 from apps.orders.tasks.order_invoice import generate_order_invoice
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 class InvoiceService:

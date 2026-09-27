@@ -1,8 +1,8 @@
-import logging
 from typing import Any
 
 import openpyxl
 from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -21,7 +21,7 @@ from apps.catalog.models.stock import Stock
 from apps.catalog.models.warehouse import Warehouse
 from config.storages import PrivateMediaStorage
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 
 
 EXPECTED_FIELDS = {
