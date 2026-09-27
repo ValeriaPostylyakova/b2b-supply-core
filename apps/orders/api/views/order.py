@@ -40,7 +40,7 @@ class OrderViewSet(ModelViewSet):
         base_permissions = super().get_permissions()
         if self.action in ["update", "partial_update", "destroy"]:
             return [permissions.IsAdminUser()]
-        elif self.action in ["create"]:
+        elif self.action in ["create", "cancel"]:
             return [IsBuyer]
         elif self.action in ["confirm"]:
             return [IsSupplier]

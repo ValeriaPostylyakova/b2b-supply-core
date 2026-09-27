@@ -2,7 +2,7 @@ import logging
 
 from celery import shared_task
 from django.db import transaction
-from django.db.models import F
+from django.db.models import Case, F, When
 from django.utils import timezone
 
 from apps.catalog.models.stock import Stock
@@ -22,7 +22,7 @@ def clear_expired_reservations_task(self):
 
     expired_ids = list(
         Reservation.objects.filter(
-            status=Reservation.Status.ACTIVE, expired_at__lte=now
+            status=Reservation.Status.ACTIVE, expires_at__lte=now
         ).values_list("id", flat=True)[:batch_size]
     )
 
@@ -38,9 +38,9 @@ def clear_expired_reservations_task(self):
     try:
         with transaction.atomic():
             reservations = list(
-                Reservation.objects.select_for_update(skip_locked=True)
-                .select_related("stock")
-                .filter(id__in=expired_ids, status=Reservation.Status.ACTIVE)
+                Reservation.objects.select_for_update(skip_locked=True).filter(
+                    id__in=expired_ids, status=Reservation.Status.ACTIVE
+                )
             )
 
             if not reservations:
@@ -52,7 +52,10 @@ def clear_expired_reservations_task(self):
 
             for reservation in reservations:
                 Stock.objects.filter(id=reservation.stock_id).update(
-                    reserved_quantity=F("reserved_quantity") - reservation.quantity
+                    reserved_quantity=Case(
+                        When(reserved_quantity__lt=reservation.quantity, then=0),
+                        default=F("reserved_quantity") - reservation.quantity,
+                    )
                 )
 
             current_batch_ids = [r.id for r in reservations]

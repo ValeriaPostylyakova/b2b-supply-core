@@ -1,3 +1,4 @@
+import random
 from unittest.mock import Mock
 
 import pytest
@@ -16,9 +17,27 @@ class TestWarehouseFilter:
     def setup_data(self):
         from apps.organizations.models import Organization
 
-        self.org_apple = Organization.objects.create(name="Apple Inc", type="SUPPLIER")
-        self.org_sony = Organization.objects.create(name="Sony Corp", type="SUPPLIER")
-        self.org_buyer = Organization.objects.create(name="Retail LLC", type="BUYER")
+        self.org_apple = Organization.objects.create(
+            name="Apple Inc",
+            type="SUPPLIER",
+            inn=str(random.randint(100000000000, 999999999999)),
+            kpp=str(random.randint(100000000, 999999999)),
+            legal_address="Тестовый адрес",
+        )
+        self.org_sony = Organization.objects.create(
+            name="Sony Corp",
+            type="SUPPLIER",
+            inn="123436788015",
+            kpp="447954932",
+            legal_address="Тестовый адрес 2",
+        )
+        self.org_buyer = Organization.objects.create(
+            name="Retail LLC",
+            type="BUYER",
+            inn="123456789015",
+            kpp="123456786",
+            legal_address="Тестовый адрес 3",
+        )
 
         self.wh_1 = Warehouse.objects.create(
             name="Central Moscow",

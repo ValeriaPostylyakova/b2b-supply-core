@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
@@ -20,7 +21,11 @@ class TestClearExpiredInviteTask:
     def setup_organization(self):
         """Фикстура, которая автоматически создает организацию для каждого теста."""
         self.org = Organization.objects.create(
-            name="Тестовая организация", type="SUPPLIER"
+            name="Тестовая организация",
+            type="SUPPLIER",
+            inn=str(random.randint(100000000000, 999999999999)),
+            kpp=str(random.randint(100000000, 999999999)),
+            legal_address="Тестовый адрес",
         )
 
     @freeze_time("2026-09-24 03:00:00")

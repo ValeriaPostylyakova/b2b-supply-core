@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 
 import pytest
@@ -20,8 +21,20 @@ def api_client():
 def setup_cancel_order_data(transactional_db):
     from apps.organizations.models import Organization
 
-    supplier_org = Organization.objects.create(name="Supplier Corp", type="SUPPLIER")
-    buyer_org = Organization.objects.create(name="Buyer Corp", type="BUYER")
+    buyer_org = Organization.objects.create(
+        name="Buyer Corp",
+        type="BUYER",
+        inn=str(random.randint(100000000000, 999999999999)),
+        kpp=str(random.randint(100000000, 999999999)),
+        legal_address="Тестовый адрес",
+    )
+    supplier_org = Organization.objects.create(
+        name="Supplier Corp",
+        type="SUPPLIER",
+        inn=str(random.randint(100000000000, 999999999999)),
+        kpp=str(random.randint(100000000, 999999999)),
+        legal_address="Тестовый адрес 2",
+    )
 
     buyer_admin = get_user_model().objects.create_user(
         username="buyer_admin_user",
@@ -53,7 +66,7 @@ def setup_cancel_order_data(transactional_db):
         stock=stock,
         quantity=5,
         status=Reservation.Status.ACTIVE,
-        expires_at=timezone.now() + timedelta(minutes=20),
+        expires_at=timezone.now() + timedelta(minutes=10),
     )
 
     return {

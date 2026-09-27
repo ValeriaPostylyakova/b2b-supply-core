@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from apps.catalog.api.filters.product import ProductFilter
@@ -13,7 +15,11 @@ class TestProductFilter:
         from apps.organizations.models import Organization
 
         self.supplier = Organization.objects.create(
-            name="Test Supplier Organization", type="supplier"
+            name="Test Supplier Organization",
+            type="supplier",
+            inn=str(random.randint(100000000000, 999999999999)),
+            kpp=str(random.randint(100000000, 999999999)),
+            legal_address="Тестовый адрес",
         )
 
         self.warehouse = Warehouse.objects.create(

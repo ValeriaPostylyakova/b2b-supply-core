@@ -81,7 +81,7 @@ class OrderService:
                 stock=stock,
                 quantity=quantity,
                 status=Reservation.Status.ACTIVE,
-                expires_at=timezone.now() + timedelta(minutes=20),
+                expires_at=timezone.now() + timedelta(minutes=10),
             )
 
         order.total_amount = total_amount

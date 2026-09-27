@@ -1,4 +1,5 @@
 import io
+import random
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -33,7 +34,11 @@ class TestPriceListImportTask:
     @pytest.fixture(autouse=True)
     def setup_data(self):
         self.supplier = Organization.objects.create(
-            name="Global Supplier", type="SUPPLIER"
+            name="Global Supplier",
+            type="SUPPLIER",
+            inn=str(random.randint(100000000000, 999999999999)),
+            kpp=str(random.randint(100000000, 999999999)),
+            legal_address="Тестовый адрес",
         )
 
         self.warehouse = Warehouse.objects.create(

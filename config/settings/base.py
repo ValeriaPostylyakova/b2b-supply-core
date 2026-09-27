@@ -3,11 +3,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-from yookassa import Configuration
-
-Configuration.account_id = os.getenv("YOOKASSA_SHOP_ID")
-Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY")
-
 
 load_dotenv()
 
@@ -46,6 +41,7 @@ LOCAL_APPS = [
     "apps.orders",
     "apps.organizations",
     "apps.common",
+    "apps.payments",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -218,5 +214,6 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
-YOOKASSA_SHOP_ID = "1472589"
-YOOKASSA_SECRET_KEY = "test_aw7Kzd1hiDK5E0DyIPyQNov0v5Bq8KUmwHPKgx2VKZU"
+YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
+YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
+PAYMENT_RETURN_URL = os.getenv("PAYMENT_RETURN_URL")

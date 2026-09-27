@@ -1,4 +1,5 @@
 import queue
+import random
 import threading
 from decimal import Decimal
 
@@ -21,8 +22,20 @@ def api_client():
 
 @pytest.fixture
 def setup_order_data(transactional_db):
-    buyer_org = Organization.objects.create(name="Buyer Corp", type="BUYER")
-    supplier_org = Organization.objects.create(name="Supplier Corp", type="SUPPLIER")
+    buyer_org = Organization.objects.create(
+        name="Buyer Corp",
+        type="BUYER",
+        inn=str(random.randint(100000000000, 999999999999)),
+        kpp=str(random.randint(100000000, 999999999)),
+        legal_address="Тестовый адрес",
+    )
+    supplier_org = Organization.objects.create(
+        name="Supplier Corp",
+        type="SUPPLIER",
+        inn=str(random.randint(100000000000, 999999999999)),
+        kpp=str(random.randint(100000000, 999999999)),
+        legal_address="Тестовый адрес 2",
+    )
 
     buyer_admin = get_user_model().objects.create_user(
         username="buyer_admin_user",
@@ -123,7 +136,7 @@ def test_race_condition_prevented(setup_order_data):
         except InsufficientStock:
             results_queue.put("INSUFFICIENT")
         except Exception as e:
-            results_queue.put(f"ERROR: {str(e)}")
+            results_queue.put(f"ERROR: {e!s}")
 
     buyer_b = Organization.objects.create(name="Buyer Corp B", type="BUYER")
 

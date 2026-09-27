@@ -3,11 +3,6 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from apps.catalog.api.cache import (
-    build_products_cache_key,
-    invalidate_products_cache,
-    product_detail_cache_key,
-)
 from apps.catalog.api.filters.product import ProductFilter
 from apps.catalog.api.paginations import ProductNumberPagination
 from apps.catalog.api.serializers.product import (
@@ -15,6 +10,11 @@ from apps.catalog.api.serializers.product import (
     ProductListDetailSerializer,
     ProductListSerializer,
     ProductUpdateSerializer,
+)
+from apps.catalog.infrastructure.cache import (
+    build_products_cache_key,
+    invalidate_products_cache,
+    product_detail_cache_key,
 )
 from apps.catalog.models.product import Product
 from apps.catalog.selectors.product import ProductSelector

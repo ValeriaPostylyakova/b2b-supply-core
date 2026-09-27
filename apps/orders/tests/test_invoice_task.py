@@ -1,3 +1,4 @@
+import random
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -13,8 +14,20 @@ class TestInvoiceCeleryTask:
     def setup_order(self):
         from apps.organizations.models import Organization
 
-        buyer = Organization.objects.create(name="Buyer", type="BUYER")
-        supplier = Organization.objects.create(name="Supplier", type="SUPPLIER")
+        buyer = Organization.objects.create(
+            name="Buyer Corp",
+            type="BUYER",
+            inn=str(random.randint(100000000000, 999999999999)),
+            kpp=str(random.randint(100000000, 999999999)),
+            legal_address="Тестовый адрес",
+        )
+        supplier = Organization.objects.create(
+            name="Supplier Corp",
+            type="SUPPLIER",
+            inn=str(random.randint(100000000000, 999999999999)),
+            kpp=str(random.randint(100000000, 999999999)),
+            legal_address="Тестовый адрес 2",
+        )
 
         return Order.objects.create(
             external_id=uuid.uuid4(),
