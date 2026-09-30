@@ -19,7 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class InitPaymentView(APIView):
-    permission_classes = [IsBuyerAdminOwner | IsBuyerManagerOwner]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsBuyerAdminOwner | IsBuyerManagerOwner,
+    ]
 
     def post(self, request):
         serializer = PaymentInitSerializer(data=request.data)

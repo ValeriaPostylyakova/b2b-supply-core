@@ -10,6 +10,7 @@ from rest_framework.exceptions import ValidationError
 from apps.catalog.models.stock import Stock
 from apps.orders.exceptions import InsufficientStock
 from apps.orders.models import FileDocument, Order, OrderItem, Reservation
+from apps.payments.services.yookassa_service import YookassaService
 
 
 class OrderService:
@@ -89,31 +90,32 @@ class OrderService:
         return order
 
     @staticmethod
-    @transaction.atomic
     def cancel_order(order):
-        if order.status not in [
-            Order.StatusChoices.DRAFT,
-            Order.StatusChoices.RESERVED,
-        ]:
+        allowed_statuses = [Order.StatusChoices.RESERVED, Order.StatusChoices.PAID]
+        if order.status not in allowed_statuses:
             raise ValidationError("Данный заказ не может быть отменен")
 
-        reservations = Reservation.objects.filter(order=order)
-        stocks = list(
-            Stock.objects.select_for_update().filter(reservations__in=reservations)
-        )
+        if order.status == Order.StatusChoices.PAID:
+            YookassaService.cancel_payment(order)
 
-        for reservation in reservations:
-            stock = next(s for s in stocks if s.id == reservation.stock_id)
-            stock.reserved_quantity -= reservation.quantity
-            stock.save(update_fields=["reserved_quantity"])
+        with transaction.atomic():
+            reservations = Reservation.objects.filter(order=order)
+            stocks = list(
+                Stock.objects.select_for_update().filter(reservations__in=reservations)
+            )
 
-            reservation.status = Reservation.Status.RELEASED
-            reservation.save(update_fields=["status"])
+            for reservation in reservations:
+                stock = next(s for s in stocks if s.id == reservation.stock_id)
+                stock.reserved_quantity -= reservation.quantity
+                stock.save(update_fields=["reserved_quantity"])
 
-        order.status = order.StatusChoices.CANCELLED
-        order.save(update_fields=["status"])
+                reservation.status = Reservation.Status.RELEASED
+                reservation.save(update_fields=["status"])
 
-        return order
+            order.status = Order.StatusChoices.CANCELLED
+            order.save(update_fields=["status"])
+
+            return order
 
     @staticmethod
     def confirm_order(order):

@@ -5,10 +5,14 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from rest_framework.exceptions import APIException
 from yookassa import Configuration
-from yookassa import Payment as YkPayment
+from yookassa import Payment as YooPayment
+from yookassa import Refund as YooRefund
+from yookassa.domain.exceptions import ApiError
 
 from apps.orders.models import Order
+from apps.orders.models.reservation import Reservation
 from apps.orders.tasks.reservation import clear_expired_reservation_task
 from apps.payments.models import Payment
 
@@ -21,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class YookassaService:
     @staticmethod
-    def create_payment_session(order: Order) -> str:
+    def create_payment_session(order: Order, user) -> str:
         with transaction.atomic():
             order = Order.objects.select_for_update().get(pk=order.pk)
 
@@ -29,7 +33,9 @@ class YookassaService:
                 raise ValueError("Заказ уже оплачен")
 
             expiry_time = timezone.now() + timedelta(minutes=10)
-            order.reservations.update(expires_at=expiry_time)
+            order.reservations.update(
+                expires_at=expiry_time, status=Reservation.Status.CONSUMED
+            )
 
             payment_attempt = Payment.objects.create(
                 order=order,
@@ -43,7 +49,7 @@ class YookassaService:
         expires_at_iso = expiry_time.isoformat()
 
         try:
-            yk_response = YkPayment.create(
+            yk_response = YooPayment.create(
                 {
                     "amount": {"value": str(payment_attempt.amount), "currency": "RUB"},
                     "confirmation": {
@@ -70,7 +76,7 @@ class YookassaService:
 
             transaction.on_commit(
                 lambda: clear_expired_reservation_task.apply_async(
-                    args=[order.id], countdown=600
+                    args=[order.id], countdown=610
                 )
             )
 
@@ -83,3 +89,35 @@ class YookassaService:
             payment_attempt.raw_response = {"error": str(e)}
             payment_attempt.save()
             raise ValueError(f"Ошибка шлюза ЮKassa: {e}")
+
+    @staticmethod
+    def cancel_payment(order: Order):
+        try:
+            payment = Payment.objects.get(order=order, provider="yookassa")
+        except Payment.DoesNotExist:
+            raise APIException("Платеж не найден в локальной базе данных")
+
+        if not payment.external_payment_id:
+            raise APIException("Отсутствует идентификатор платежа ЮKassa")
+
+        idempotence_key = str(uuid.uuid4())
+
+        try:
+            if getattr(payment, "status", None) == "waiting_for_capture":
+                YooPayment.cancel(payment.external_payment_id, idempotence_key)
+                payment.status = "canceled"
+                payment.save(update_fields=["status"])
+
+            else:
+                YooRefund.create(
+                    {
+                        "payment_id": payment.external_payment_id,
+                        "amount": {"value": str(order.total_amount), "currency": "RUB"},
+                    },
+                    idempotence_key,
+                )
+                payment.status = "refunded"
+                payment.save(update_fields=["status"])
+
+        except ApiError as e:
+            raise APIException(f"Ошибка API ЮKassa при отмене/возврате: {e.message}")
