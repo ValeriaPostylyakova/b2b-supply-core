@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class YookassaService:
     @staticmethod
-    def create_payment_session(order: Order, user) -> str:
+    def create_payment_session(order: Order) -> str:
         with transaction.atomic():
             order = Order.objects.select_for_update().get(pk=order.pk)
 
@@ -93,9 +93,13 @@ class YookassaService:
     @staticmethod
     def cancel_payment(order: Order):
         try:
-            payment = Payment.objects.get(order=order, provider="yookassa")
+            payment = (
+                Payment.objects.filter(order=order, provider="yookassa")
+                .order_by("-created_at")
+                .first()
+            )
         except Payment.DoesNotExist:
-            raise APIException("Платеж не найден в локальной базе данных")
+            raise APIException("Платеж не найден в базе данных")
 
         if not payment.external_payment_id:
             raise APIException("Отсутствует идентификатор платежа ЮKassa")

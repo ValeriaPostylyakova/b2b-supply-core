@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
@@ -11,10 +12,10 @@ app.autodiscover_tasks()
 
 
 app.conf.beat_schedule = {
-    # "clear_expired_invite_at_3_am": {
-    #     "task": "organizations.clear_expired_invite",
-    #     "schedule": crontab(hour=3, minute=0),
-    # },
+    "clear_expired_invite_at_3_am": {
+        "task": "organizations.clear_expired_invite",
+        "schedule": crontab(hour=3, minute=0),
+    },
     # "reconcile_pending_payments": {
     #     "task": "payments.reconcile_pending_payments",
     #     "schedule": 300.0,
