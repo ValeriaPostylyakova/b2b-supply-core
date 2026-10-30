@@ -1,4 +1,5 @@
 from django.db.models import Count
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions
 from rest_framework.viewsets import ModelViewSet
 
@@ -15,6 +16,7 @@ from apps.organizations.api.permissions import (
 )
 
 
+@extend_schema(tags=["warehouse"])
 class WarehouseViewSet(ModelViewSet):
     queryset = Warehouse.objects.all()
     permission_classes = [permissions.IsAuthenticated]

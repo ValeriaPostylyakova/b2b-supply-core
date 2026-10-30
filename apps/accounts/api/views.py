@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from drf_spectacular.utils import extend_schema  # Импортируем декоратор для тегов
 from rest_framework import permissions, status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.request import Request
@@ -27,6 +28,7 @@ from config.settings import base as settings
 User = get_user_model()
 
 
+@extend_schema(tags=["auth"])
 class CookieTokenObtainView(TokenObtainPairView):
     throttle_classes = [LoginRateThrottle]
     serializer_class = CustomTokenObtainPairSerializer
@@ -36,6 +38,7 @@ class CookieTokenObtainView(TokenObtainPairView):
         return AuthService.set_refresh_token_cookie(response)
 
 
+@extend_schema(tags=["auth"])
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request: Request, *args, **kwargs) -> Response:
         cookie_name = settings.SIMPLE_JWT["AUTH_COOKIE"]
@@ -65,6 +68,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response
 
 
+@extend_schema(tags=["auth"])
 class LogoutAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -90,9 +94,9 @@ class LogoutAPIView(APIView):
             return Response({"detail": "Invalid or expired token."}, status=400)
 
 
+@extend_schema(tags=["auth"])
 class RequestOTPAPIView(APIView):
     throttle_classes = [OTPRequestRateThrottle]
-
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -107,9 +111,9 @@ class RequestOTPAPIView(APIView):
         )
 
 
+@extend_schema(tags=["auth"])
 class VerifyOTPAPIView(APIView):
     throttle_classes = [OTPVerifyRateThrottle]
-
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -129,6 +133,7 @@ class VerifyOTPAPIView(APIView):
         )
 
 
+@extend_schema(tags=["auth"])
 class ResetPasswordAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -145,6 +150,7 @@ class ResetPasswordAPIView(APIView):
         )
 
 
+@extend_schema(tags=["users"])
 class MeAPIView(RetrieveUpdateAPIView):
     queryset = User.objects.all().select_related("organization")
     permission_classes = [permissions.IsAuthenticated]

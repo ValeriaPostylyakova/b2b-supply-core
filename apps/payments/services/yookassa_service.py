@@ -76,7 +76,7 @@ class YookassaService:
 
             transaction.on_commit(
                 lambda: clear_expired_reservation_task.apply_async(
-                    args=[order.id], countdown=610
+                    args=[order.id], countdown=600
                 )
             )
 

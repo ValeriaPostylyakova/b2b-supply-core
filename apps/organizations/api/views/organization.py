@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions
 from rest_framework.generics import RetrieveUpdateAPIView
 
@@ -11,6 +12,7 @@ from apps.organizations.api.serializers import (
 from apps.organizations.models import Organization
 
 
+@extend_schema(tags=["organization"])
 class MyCompanyAPIView(RetrieveUpdateAPIView):
     queryset = Organization.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsActiveUserOrganization]

@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +15,7 @@ from apps.organizations.api.permissions import (
 IsSupplier = IsSupplierAdminOwner | IsSupplierManagerOwner
 
 
+@extend_schema(tags=["order invoice"])
 class OrderInvoiceView(APIView):
     throttle_classes = [PDFGenerationRateThrottle]
 

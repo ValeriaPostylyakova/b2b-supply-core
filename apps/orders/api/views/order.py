@@ -1,7 +1,11 @@
-from rest_framework import permissions, status
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import permissions, serializers, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
 from rest_framework.viewsets import ModelViewSet
 
 from apps.orders.api.filters import OrderFilter
@@ -23,6 +27,7 @@ from apps.organizations.api.permissions import (
 )
 
 
+@extend_schema(tags=["orders"])
 class OrderViewSet(ModelViewSet):
     queryset = (
         Order.objects.select_related("buyer", "supplier").all().order_by("-created_at")
@@ -85,6 +90,26 @@ class OrderViewSet(ModelViewSet):
         )
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Отмена заказа",
+        description="Переводит заказ в статус CANCELLED и освобождает все связанные с ним резервы товаров на складах.",
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name="OrderCancelResponse",
+                    fields={
+                        "detail": serializers.CharField(default="Заказ успешно отменен")
+                    },
+                ),
+                description="Заказ успешно отменен",
+            ),
+            400: OpenApiResponse(
+                description="Заказ нельзя отменить из текущего статуса"
+            ),
+            404: OpenApiResponse(description="Заказ с таким идентификатором не найден"),
+        },
+    )
     @action(
         detail=True,
         methods=["post"],
@@ -95,6 +120,28 @@ class OrderViewSet(ModelViewSet):
         OrderService.cancel_order(order)
         return Response({"detail": "Заказ успешно отменен"}, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Подтверждение заказа",
+        description="Переводит заказ в статус CONFIRMED. Запускает дальнейшие B2B-процессы снабжения.",
+        request=None,  # Тело запроса (payload) не требуется
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name="OrderConfirmResponse",
+                    fields={
+                        "detail": serializers.CharField(
+                            default="Заказ успешно подтвержден"
+                        )
+                    },
+                ),
+                description="Заказ успешно подтвержден",
+            ),
+            400: OpenApiResponse(
+                description="Ошибка валидации при подтверждении заказа"
+            ),
+            404: OpenApiResponse(description="Заказ не найден"),
+        },
+    )
     @action(
         detail=True,
         methods=["post"],
@@ -107,6 +154,14 @@ class OrderViewSet(ModelViewSet):
             {"detail": "Заказ успешно подтвержден"}, status=status.HTTP_200_OK
         )
 
+    @extend_schema(
+        summary="Получение документов заказа",
+        description="Возвращает список всех прикрепленных к заказу файлов и документов (например, счета-фактуры).",
+        responses={
+            200: FileDocumentSerializer(many=True),
+            404: OpenApiResponse(description="Заказ не найден"),
+        },
+    )
     @action(
         detail=True,
         methods=["get"],
@@ -115,8 +170,15 @@ class OrderViewSet(ModelViewSet):
         order = self.get_object()
         documents = OrderService.get_order_documents(order.id)
         serializer = FileDocumentSerializer(documents, many=True)
-        return Response(serializer.data, status=HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Получение отчетов по заказам",
+        description="Возвращает агрегированные аналитические данные по заказам организации.",
+        responses={
+            200: OrderReportsSerializer,
+        },
+    )
     @action(
         detail=False,
         methods=["get"],

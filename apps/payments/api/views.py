@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,6 +13,7 @@ from apps.payments.api.serializers import PaymentInitSerializer
 from apps.payments.services.yookassa_service import YookassaService
 
 
+@extend_schema(tags=["payment"])
 class PaymentView(APIView):
     permission_classes = [
         permissions.IsAuthenticated,

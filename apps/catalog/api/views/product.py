@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -21,6 +22,7 @@ from apps.catalog.selectors.product import ProductSelector
 from apps.organizations.api.permissions import IsSupplier, IsVerifyOrganization
 
 
+@extend_schema(tags=["product"])
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductListSerializer

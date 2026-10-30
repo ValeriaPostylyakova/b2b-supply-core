@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
@@ -17,6 +18,7 @@ from apps.organizations.api.permissions import (
 )
 
 
+@extend_schema(tags=["price-list"])
 class PriceListPresignedUrlAPIView(APIView):
     permission_classes = [
         permissions.IsAuthenticated,
@@ -32,6 +34,7 @@ class PriceListPresignedUrlAPIView(APIView):
         return Response(upload_data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["price-list"])
 class PriceListCreateAPIView(APIView):
     throttle_classes = [ExcelUploadRateThrottle]
 
@@ -61,6 +64,7 @@ class PriceListCreateAPIView(APIView):
         )
 
 
+@extend_schema(tags=["price-list"])
 class PriceListStatusAPIView(RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSupplierAdminOwner]
     serializer_class = PriceListImportStatusSerializer

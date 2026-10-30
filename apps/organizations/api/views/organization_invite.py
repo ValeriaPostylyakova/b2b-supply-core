@@ -1,4 +1,5 @@
 from django.core import signing
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,6 +23,7 @@ from apps.organizations.services.organization_invite import (
 REGISTRATION_SALT = "user-complete-registration-salt"
 
 
+@extend_schema(tags=["organization"])
 class InviteAcceptAPIView(APIView):
     throttle_classes = [OTPRequestRateThrottle]
 
@@ -49,6 +51,7 @@ class InviteAcceptAPIView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["organization"])
 class InviteRegisterAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -69,6 +72,7 @@ class InviteRegisterAPIView(APIView):
         )
 
 
+@extend_schema(tags=["organization"])
 class OrganizationInviteViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,

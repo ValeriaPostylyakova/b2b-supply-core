@@ -29,6 +29,16 @@ services:
     depends_on:
       - celery_worker
 
+  flower:
+    <<: *django-common
+    ports:
+      - "5555:5555"
+
+    command: celery -A config flower --port=5555
+    depends_on:
+      - redis
+      - celery_worker  
+
   db:
     image: postgres:16
     restart: always

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.mixins import UpdateModelMixin
@@ -23,6 +24,7 @@ ALLOWED_ROLE_PERMISSIONS = (
 )
 
 
+@extend_schema(tags=["stock"])
 class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
     queryset = Stock.objects.all().select_related("warehouse")
     serializer_class = StockListSerializer
@@ -67,6 +69,12 @@ class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
             StockListSerializer(updated_instance).data, status=status.HTTP_200_OK
         )
 
+    @extend_schema(
+        summary="Получение агрегированного отчета по остаткам",
+        description="Возвращает общую статистику: количество уникальных товаров, "
+        "сумму всех остатков, зарезервированные и доступные к заказу позиции.",
+        responses={200: StockReportsSerializer},
+    )
     @action(detail=False, methods=["get"])
     def reports(self, request):
         report_data = self.get_queryset().get_report_data()

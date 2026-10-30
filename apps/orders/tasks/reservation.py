@@ -54,7 +54,7 @@ def clear_expired_reservation_task(self, order_id):
                 for reservation in reservations:
                     stock = reservation.stock
 
-                    stock.quantity = F("quantity") + reservation.quantity
+                    stock.reserved_quantity -= reservation.quantity
                     stock.save()
 
                     reservation.status = Reservation.Status.EXPIRED

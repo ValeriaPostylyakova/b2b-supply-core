@@ -33,6 +33,7 @@ THIRD_PARTY_APPS = [
     "storages",
     "imagekit",
     "django_cleanup.apps.CleanupConfig",
+    "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -131,6 +132,16 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.MultiPartParser",
         "rest_framework.parsers.FormParser",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "B2B Supply Core API",
+    "DESCRIPTION": "Документация к API платформы снабжения b2b",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_COERCION": True,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 SIMPLE_JWT = {
