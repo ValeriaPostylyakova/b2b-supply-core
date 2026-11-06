@@ -6,7 +6,7 @@ class JwtBlacklist:
     PREFIX = "jwt:blacklist:"
 
     def __init__(self):
-        self.client = redis.from_url(settings.REDIS_BLACKLIST_URL)
+        self.client = redis.from_url(settings.REDIS_URL)
 
     def get_key(self, jti: str) -> str:
         return f"{self.PREFIX}{jti}"

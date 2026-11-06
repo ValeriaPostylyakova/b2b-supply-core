@@ -19,28 +19,24 @@ from apps.organizations.api.permissions import (
 @extend_schema(tags=["warehouse"])
 class WarehouseViewSet(ModelViewSet):
     queryset = Warehouse.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsSupplierAdminOwner,
+        IsVerifyOrganization,
+    ]
     serializer_class = WarehouseListSerializer
     filterset_class = WarehouseFilter
     pagination_class = ProductNumberPagination
 
     lookup_field = "external_id"
 
-    def get_permissions(self):
-        base_permissions = super().get_permissions()
-        if self.action in ["create", "update", "partial_update", "destroy"]:
-            base_permissions.extend([IsSupplierAdminOwner(), IsVerifyOrganization()])
-        return base_permissions
-
     def get_queryset(self):
         queryset = self.queryset.filter(is_active=True)
         user = self.request.user
-        if user.is_buyer and user.has_organization:
-            queryset = queryset.select_related("supplier")
-        else:
-            queryset = queryset.filter(supplier=user.organization).annotate(
-                products_count=Count("stocks__product", distinct=True)
-            )
+
+        queryset = queryset.filter(supplier=user.organization).annotate(
+            products_count=Count("stocks__product", distinct=True)
+        )
         return queryset
 
     def get_serializer_class(self):

@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.catalog.models.stock import Stock
+from apps.common.services.outbox import create_outbox_event
 from apps.orders.exceptions import InsufficientStock
 from apps.orders.models import FileDocument, Order, OrderItem, Reservation
 from apps.payments.services.yookassa_service import YookassaService
@@ -87,6 +88,17 @@ class OrderService:
 
         order.total_amount = total_amount
         order.save(update_fields=["total_amount"])
+
+        create_outbox_event(
+            event_type="order.created",
+            aggregate_id=str(order.id),
+            routing_key="order.created",
+            payload={
+                "order_id": order.id,
+                "status": order.status,
+            },
+        )
+
         return order
 
     @staticmethod

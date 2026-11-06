@@ -1,16 +1,19 @@
-version: '3.8'
-
 x-django-common: &django-common
   build: .
   env_file:
     - .env
   volumes:
     - .:/app
+  networks:
+    - default
+    - shared_rabbitmq_net
   depends_on:
     db:
       condition: service_healthy
     redis:
-      condition: service_started
+      condition: service_healthy 
+    rabbitmq:
+      condition: service_healthy
 
 services:
   django_server:
@@ -33,14 +36,13 @@ services:
     <<: *django-common
     ports:
       - "5555:5555"
-
     command: celery -A config flower --port=5555
     depends_on:
       - redis
       - celery_worker  
 
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -55,17 +57,50 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.8-alpine
+    container_name: core_redis_broker
     restart: always
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - default
+      - shared_rabbitmq_net 
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: core_rabbitmq_broker
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"     
+      - "15672:15672" 
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+      - shared_rabbitmq_net
 
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+    image: cr.yandex/mirror/minio/minio:latest
+    container_name: minio
     restart: always
     ports:
       - "9000:9000"
@@ -76,8 +111,15 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
+    networks:
+      - default
 
 volumes:
   pg_data:
   redis_data:
+  rabbitmq_data:
   minio_data:
+
+networks:
+  shared_rabbitmq_net:
+    name: shared_rabbitmq_net

@@ -1,5 +1,3 @@
-from venv import logger
-
 from billiard import SoftTimeLimitExceeded
 from celery import shared_task
 from celery.utils.log import get_task_logger

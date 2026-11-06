@@ -105,3 +105,4 @@ webencodings==0.6.1
 wrapt==2.4.1
 yookassa==3.12.1
 zopfli==0.4.3
+aio_pika

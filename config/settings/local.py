@@ -15,8 +15,11 @@ DATABASES = {
     }
 }
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+REDIS_URL = os.getenv("REDIS_URL")
+
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://core_redis_broker:6379/0")
+RABBITMQ_URL =  os.getenv("RABBITMQ_URL")
 
 CELERY_TASK_QUEUES = {
     "default": {},
@@ -78,11 +81,9 @@ LOGGING = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
     }
 }
-
-REDIS_BLACKLIST_URL = "redis://redis:6379/2"
