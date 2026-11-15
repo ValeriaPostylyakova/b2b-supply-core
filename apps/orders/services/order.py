@@ -11,6 +11,7 @@ from apps.catalog.models.stock import Stock
 from apps.common.services.outbox import create_outbox_event
 from apps.orders.exceptions import InsufficientStock
 from apps.orders.models import FileDocument, Order, OrderItem, Reservation
+from apps.orders.selectors import order
 from apps.payments.services.yookassa_service import YookassaService
 
 
@@ -89,16 +90,6 @@ class OrderService:
         order.total_amount = total_amount
         order.save(update_fields=["total_amount"])
 
-        create_outbox_event(
-            event_type="order.created",
-            aggregate_id=str(order.id),
-            routing_key="order.created",
-            payload={
-                "order_id": order.id,
-                "status": order.status,
-            },
-        )
-
         return order
 
     @staticmethod
@@ -134,8 +125,45 @@ class OrderService:
         if order.status != Order.StatusChoices.PAID:
             raise ValidationError("Данный заказ не может быть подтвержден")
 
-        order.status = order.StatusChoices.CONFIRMED
-        order.save(update_fields=["status"])
+        with transaction.atomic():
+            order.status = order.StatusChoices.CONFIRMED
+            order.save(update_fields=["status"])
+            
+            create_outbox_event(
+                event_type="order.confirmed",
+                aggregate_id=str(order.id),
+                routing_key="order.confirmed",
+                payload = {
+                    "order": {
+                        "id": str(order.external_id),
+                        "order_number": str(order.id),
+                        "status": order.status,
+                        "created_at": order.created_at.isoformat(),
+                        "updated_at": order.updated_at.isoformat(),
+                        "supplier": {"name": order.supplier.name} if order.supplier else None,
+                        "buyer": {"name": order.buyer.name},
+                        "items_count": order.items.count(),
+                        "total_amount": str(order.total_amount),
+                    },
+                    "items": [
+                        {
+                            "product": {
+                                "name": item.product.name,
+                                "sku": item.product.sku,
+                            },
+                            "warehouse": {
+                                "name": item.warehouse.name,
+                                "address": item.warehouse.address,
+                            } if item.warehouse else None,
+                            "quantity": item.quantity,
+                            "unit_price": str(item.unit_price),
+                            "line_total": str(item.line_total),
+                        }
+                        for item in order.items.all()
+                    ],
+                },
+            )
+        
         return order
 
     @staticmethod

@@ -113,6 +113,7 @@ services:
     command: server /data --console-address ":9001"
     networks:
       - default
+      - shared_rabbitmq_net
 
 volumes:
   pg_data:

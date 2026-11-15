@@ -16,8 +16,10 @@ app.conf.beat_schedule = {
         "task": "organizations.clear_expired_invite",
         "schedule": crontab(hour=3, minute=0),
     },
-    # "reconcile_pending_payments": {
-    #     "task": "payments.reconcile_pending_payments",
-    #     "schedule": 300.0,
-    # },
+    
+    "publish-outbox-events": {
+        "task": "common.publish_outbox_events",
+         "schedule": 5.0,
+        "kwargs": {"batch_size": 100},
+    }
 }
