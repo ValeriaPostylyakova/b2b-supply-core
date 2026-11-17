@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 from apps.catalog.models.stock import Stock
 from apps.common.services.outbox import create_outbox_event
 from apps.orders.exceptions import InsufficientStock
-from apps.orders.models import FileDocument, Order, OrderItem, Reservation
+from apps.orders.models import Order, OrderItem, Reservation
 from apps.orders.selectors import order
 from apps.payments.services.yookassa_service import YookassaService
 
@@ -165,8 +165,3 @@ class OrderService:
             )
         
         return order
-
-    @staticmethod
-    def get_order_documents(order_id):
-        order = Order.objects.get(id=order_id)
-        return FileDocument.objects.filter(order=order)

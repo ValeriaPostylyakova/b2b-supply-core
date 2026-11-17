@@ -1,23 +1,16 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from apps.orders.api.views.order import OrderViewSet
-from apps.orders.api.views.order_invoice import OrderInvoiceView
+from apps.orders.api.views.order import OrderExistsView, OrderViewSet
 
 router = DefaultRouter()
-
 router.register("", OrderViewSet, basename="orders")
 
 urlpatterns = [
-    path(
-        "<str:external_id>/invoice/",
-        OrderInvoiceView.as_view(),
-        name="order-invoice-create",
-    ),
-    path(
-        "invoice-status/<str:task_id>/",
-        OrderInvoiceView.as_view(),
-        name="order-invoice-status",
+     path(
+        "<uuid:external_id>/exists/",
+        OrderExistsView.as_view(),
+        name="order-exists",
     ),
 ]
 

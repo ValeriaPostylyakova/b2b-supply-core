@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  django_server:
+  django-server:
     command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client manage.py runserver 0.0.0.0:8000 --nothreading --noreload
     ports:
       - "8000:8000"

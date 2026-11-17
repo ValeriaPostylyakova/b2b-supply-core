@@ -1,3 +1,6 @@
+from uuid import UUID
+
+from django.db.models import Q
 from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
@@ -6,12 +9,13 @@ from drf_spectacular.utils import (
 from rest_framework import permissions, serializers, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from apps.orders.api.filters import OrderFilter
 from apps.orders.api.paginations import OrderNumberPagination
 from apps.orders.api.permissions import IsNotWarehouseRole
-from apps.orders.api.serializers.file_document import FileDocumentSerializer
+
 from apps.orders.api.serializers.order import (
     OrderCreateSerializer,
     OrderDetailSerializer,
@@ -155,24 +159,6 @@ class OrderViewSet(ModelViewSet):
         )
 
     @extend_schema(
-        summary="Получение документов заказа",
-        description="Возвращает список всех прикрепленных к заказу файлов и документов (например, счета-фактуры).",
-        responses={
-            200: FileDocumentSerializer(many=True),
-            404: OpenApiResponse(description="Заказ не найден"),
-        },
-    )
-    @action(
-        detail=True,
-        methods=["get"],
-    )
-    def documents(self, request, external_id=None):
-        order = self.get_object()
-        documents = OrderService.get_order_documents(order.id)
-        serializer = FileDocumentSerializer(documents, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @extend_schema(
         summary="Получение отчетов по заказам",
         description="Возвращает агрегированные аналитические данные по заказам организации.",
         responses={
@@ -187,3 +173,23 @@ class OrderViewSet(ModelViewSet):
         report_data = self.get_queryset().get_report_data()
         serializer = OrderReportsSerializer(report_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OrderExistsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, external_id: UUID):
+        order_exists = Order.objects.filter(
+            Q(buyer=request.user.organization) | Q(supplier=request.user.organization),
+            external_id=external_id).exists()
+        
+        if not order_exists:
+            return Response(
+               {        
+                   "detail": "Заказ не найден или у вас нет к нему доступа."
+                   },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(status=status.HTTP_200_OK)
+        

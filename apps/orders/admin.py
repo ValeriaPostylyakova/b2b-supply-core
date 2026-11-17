@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from apps.orders.models import FileDocument, Order, OrderItem, Reservation
+from apps.orders.models import Order, OrderItem, Reservation
 
 
 class OrderItemInline(admin.TabularInline):
@@ -10,11 +10,6 @@ class OrderItemInline(admin.TabularInline):
     raw_id_fields = ("product", "warehouse")
     readonly_fields = ("line_total",)
 
-
-class FileDocumentInline(admin.TabularInline):
-    model = FileDocument
-    extra = 0
-    readonly_fields = ("storage_key", "size", "content_type", "created_at")
 
 
 class ReservationInline(admin.TabularInline):
@@ -69,24 +64,7 @@ class OrderAdmin(admin.ModelAdmin):
         ),
     )
 
-    inlines = [OrderItemInline, FileDocumentInline, ReservationInline]
-
-
-@admin.register(FileDocument)
-class FileDocumentAdmin(admin.ModelAdmin):
-    list_display = (
-        "original_name",
-        "order",
-        "document_type",
-        "content_type",
-        "size",
-        "created_at",
-    )
-    list_filter = ("document_type", "content_type", "created_at")
-    search_fields = ("original_name", "storage_key", "order__id")
-    raw_id_fields = ("order",)
-    ordering = ("-created_at",)
-
+    inlines = [OrderItemInline, ReservationInline]
 
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):

@@ -16,7 +16,7 @@ x-django-common: &django-common
       condition: service_healthy
 
 services:
-  django_server:
+  django-server:
     <<: *django-common
     ports:
       - "8000:8000"
