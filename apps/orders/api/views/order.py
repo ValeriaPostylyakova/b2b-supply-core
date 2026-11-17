@@ -127,7 +127,7 @@ class OrderViewSet(ModelViewSet):
     @extend_schema(
         summary="Подтверждение заказа",
         description="Переводит заказ в статус CONFIRMED. Запускает дальнейшие B2B-процессы снабжения.",
-        request=None,  # Тело запроса (payload) не требуется
+        request=None, 
         responses={
             200: OpenApiResponse(
                 response=inline_serializer(

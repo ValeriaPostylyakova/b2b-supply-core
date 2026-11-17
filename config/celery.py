@@ -21,5 +21,9 @@ app.conf.beat_schedule = {
         "task": "common.publish_outbox_events",
          "schedule": 5.0,
         "kwargs": {"batch_size": 100},
+    },
+    "clear_expired_reservation": {
+        "task": "orders.clear_expired_reservation",
+         "schedule": crontab(minute=0),
     }
 }
