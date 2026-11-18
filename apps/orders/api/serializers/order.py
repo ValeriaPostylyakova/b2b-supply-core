@@ -56,12 +56,14 @@ class OrderListSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
         request = self.context.get("request")
-        if not request or not request.user:
-            print(f"Ошибка контекста запроса: {self.context}")
-            raise serializers.ValidationError("Ошибка контекста запроса")
+        if not request or not getattr(request, "user", None):
+            return
+
+        user = request.user
+        if not user.is_authenticated:
+            return
 
         if request.method == "GET":
-            user = request.user
             if user.is_buyer:
                 self.fields.pop("buyer", None)
             elif user.is_supplier:

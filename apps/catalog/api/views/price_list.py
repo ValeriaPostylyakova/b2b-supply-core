@@ -29,7 +29,18 @@ class PriceListPresignedUrlAPIView(APIView):
         summary="Получить URL загрузки",
         description="Возвращает presigned URL для PUT-загрузки Excel и storage_key. После загрузки передайте storage_key в POST /api/v1/price-list/.",
         request=PriceListPresignedUrlRequestSerializer,
-        responses={200: OpenApiResponse(response=inline_serializer(name="PriceListUploadUrlResponse", fields={"upload_url": serializers.URLField(), "storage_key": serializers.CharField()}), description="Временная ссылка и ключ файла.")},
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name="PriceListUploadUrlResponse",
+                    fields={
+                        "upload_url": serializers.URLField(),
+                        "storage_key": serializers.CharField(),
+                    },
+                ),
+                description="Временная ссылка и ключ файла.",
+            )
+        },
     )
     def post(self, request):
         serializer = PriceListPresignedUrlRequestSerializer(data=request.data)
@@ -49,7 +60,11 @@ class PriceListCreateAPIView(APIView):
         IsSupplierAdminVerifyOrganization,
     ]
 
-    @extend_schema(summary="Запустить импорт прайс-листа", description="Запускает фоновую обработку ранее загруженного .xlsx/.xls файла. В ответе — id задачи и статус PENDING.", request=PriceListImportCreateSerializer)
+    @extend_schema(
+        summary="Запустить импорт прайс-листа",
+        description="Запускает фоновую обработку ранее загруженного .xlsx/.xls файла. В ответе — id задачи и статус PENDING.",
+        request=PriceListImportCreateSerializer,
+    )
     def post(self, request):
         serializer = PriceListImportCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -71,7 +86,11 @@ class PriceListCreateAPIView(APIView):
         )
 
 
-@extend_schema(tags=["Импорт прайс-листа"], summary="Статус импорта", description="Показывает статус задачи и количество обработанных, успешных и ошибочных строк.")
+@extend_schema(
+    tags=["Импорт прайс-листа"],
+    summary="Статус импорта",
+    description="Показывает статус задачи и количество обработанных, успешных и ошибочных строк.",
+)
 class PriceListStatusAPIView(RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSupplierAdminOwner]
     serializer_class = PriceListImportStatusSerializer

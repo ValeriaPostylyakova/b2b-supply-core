@@ -137,7 +137,7 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "B2B Supply Core API",
-    "DESCRIPTION": "Документация к API платформы снабжения b2b",
+    "DESCRIPTION": "Backend B2B-платформы снабжения: поставщики публикуют каталог и остатки, покупатели оформляют заказы с резервированием товара и оплачивают их онлайн.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_COERCION": True,

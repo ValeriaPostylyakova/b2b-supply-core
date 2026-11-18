@@ -2,12 +2,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import URLPattern, URLResolver, include, path
-from rest_framework.permissions import AllowAny
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from rest_framework.permissions import AllowAny
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path(settings.ADMIN_PANEL_URL, admin.site.urls),
@@ -16,7 +16,11 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("api/v1/", include("apps.catalog.api.urls")),
     path("api/v1/orders/", include("apps.orders.api.urls")),
     path("api/v1/payments/", include("apps.payments.api.urls")),
-    path("api/schema/", SpectacularAPIView.as_view(permission_classes=[AllowAny]), name="schema"),
+    path(
+        "api/schema/",
+        SpectacularAPIView.as_view(permission_classes=[AllowAny]),
+        name="schema",
+    ),
     path(
         "api/docs/swagger/",
         SpectacularSwaggerView.as_view(url_name="schema"),

@@ -17,7 +17,6 @@ from rest_framework.viewsets import ModelViewSet
 from apps.orders.api.filters import OrderFilter
 from apps.orders.api.paginations import OrderNumberPagination
 from apps.orders.api.permissions import IsNotWarehouseRole
-
 from apps.orders.api.serializers.order import (
     OrderCreateSerializer,
     OrderDetailSerializer,
@@ -34,11 +33,24 @@ from apps.organizations.api.permissions import (
 
 
 @extend_schema_view(
-    list=extend_schema(summary="Список заказов", description="Возвращает заказы, в которых текущая организация выступает покупателем или поставщиком."),
-    retrieve=extend_schema(summary="Карточка заказа", description="Возвращает заказ, состав позиций, цены и суммы."),
-    update=extend_schema(summary="Изменить заказ", description="Административное обновление заказа."),
-    partial_update=extend_schema(summary="Изменить заказ частично", description="Административное частичное обновление заказа."),
-    destroy=extend_schema(summary="Удалить заказ", description="Административное удаление заказа."),
+    list=extend_schema(
+        summary="Список заказов",
+        description="Возвращает заказы, в которых текущая организация выступает покупателем или поставщиком.",
+    ),
+    retrieve=extend_schema(
+        summary="Карточка заказа",
+        description="Возвращает заказ, состав позиций, цены и суммы.",
+    ),
+    update=extend_schema(
+        summary="Изменить заказ", description="Административное обновление заказа."
+    ),
+    partial_update=extend_schema(
+        summary="Изменить заказ частично",
+        description="Административное частичное обновление заказа.",
+    ),
+    destroy=extend_schema(
+        summary="Удалить заказ", description="Административное удаление заказа."
+    ),
 )
 @extend_schema(tags=["Заказы"])
 class OrderViewSet(ModelViewSet):
@@ -91,8 +103,28 @@ class OrderViewSet(ModelViewSet):
         summary="Создать заказ",
         description="Доступно покупателю. Передайте supplier UUID и список позиций с product UUID, warehouse UUID и quantity. При создании система резервирует остатки.",
         request=OrderCreateSerializer,
-        examples=[OpenApiExample("Новый заказ", value={"supplier": "<supplier_uuid>", "items": [{"product": "<product_uuid>", "warehouse": "<warehouse_uuid>", "quantity": 5}]}, request_only=True)],
-        responses={201: OpenApiResponse(response=OrderDetailSerializer, description="Заказ создан, остатки зарезервированы.")},
+        examples=[
+            OpenApiExample(
+                "Новый заказ",
+                value={
+                    "supplier": "<supplier_uuid>",
+                    "items": [
+                        {
+                            "product": "<product_uuid>",
+                            "warehouse": "<warehouse_uuid>",
+                            "quantity": 5,
+                        }
+                    ],
+                },
+                request_only=True,
+            )
+        ],
+        responses={
+            201: OpenApiResponse(
+                response=OrderDetailSerializer,
+                description="Заказ создан, остатки зарезервированы.",
+            )
+        },
     )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -143,7 +175,7 @@ class OrderViewSet(ModelViewSet):
     @extend_schema(
         summary="Подтвердить заказ",
         description="Поставщик подтверждает заказ. Доступно для заказа в допустимом бизнес-статусе.",
-        request=None, 
+        request=None,
         responses={
             200: OpenApiResponse(
                 response=inline_serializer(
@@ -194,20 +226,21 @@ class OrderViewSet(ModelViewSet):
 @extend_schema(tags=["Заказы"])
 class OrderExistsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    
-    @extend_schema(summary="Проверить доступ к заказу", description="200 — заказ существует и доступен текущей организации; 404 — не найден или нет доступа.")
+
+    @extend_schema(
+        summary="Проверить доступ к заказу",
+        description="200 — заказ существует и доступен текущей организации; 404 — не найден или нет доступа.",
+    )
     def get(self, request, external_id: UUID):
         order_exists = Order.objects.filter(
             Q(buyer=request.user.organization) | Q(supplier=request.user.organization),
-            external_id=external_id).exists()
-        
+            external_id=external_id,
+        ).exists()
+
         if not order_exists:
             return Response(
-               {        
-                   "detail": "Заказ не найден или у вас нет к нему доступа."
-                   },
+                {"detail": "Заказ не найден или у вас нет к нему доступа."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         return Response(status=status.HTTP_200_OK)
-        
