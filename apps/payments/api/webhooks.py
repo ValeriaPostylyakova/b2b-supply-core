@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 import logging
 
 from rest_framework import permissions, status
@@ -11,6 +12,7 @@ from apps.payments.services.yookassa_webhook_service import YooKassaWebhookServi
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(tags=["Оплата"], summary="Webhook YooKassa", description="Внутренний callback платёжного провайдера. Не предназначен для ручного вызова из Swagger.")
 class YookassaWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
 

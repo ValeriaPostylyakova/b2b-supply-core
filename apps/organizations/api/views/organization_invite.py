@@ -1,5 +1,5 @@
 from django.core import signing
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiExample, extend_schema, extend_schema_view
 from rest_framework import mixins, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,12 +23,13 @@ from apps.organizations.services.organization_invite import (
 REGISTRATION_SALT = "user-complete-registration-salt"
 
 
-@extend_schema(tags=["organization"])
+@extend_schema(tags=["Приглашения"])
 class InviteAcceptAPIView(APIView):
     throttle_classes = [OTPRequestRateThrottle]
 
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Принять приглашение", description="Публичный шаг по токену из приглашения. Для нового пользователя вернёт registration_token; для существующего — подтвердит привязку.", request=OrganizationAcceptInviteSerializer, examples=[OpenApiExample("Токен приглашения", value={"token": "<invite_token>"}, request_only=True)])
     def post(self, request):
         serializer = OrganizationAcceptInviteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -51,10 +52,11 @@ class InviteAcceptAPIView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["organization"])
+@extend_schema(tags=["Приглашения"])
 class InviteRegisterAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Завершить регистрацию", description="Только для нового пользователя. Используйте registration_token из ответа принятия приглашения.", request=OrganizationInviteRegistrationSerializer, examples=[OpenApiExample("Данные регистрации", value={"registration_token": "<registration_token>", "first_name": "Иван", "last_name": "Иванов", "username": "ivanov", "password": "StrongPass123!"}, request_only=True)])
     def post(self, request):
         serializer = OrganizationInviteRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -72,7 +74,12 @@ class InviteRegisterAPIView(APIView):
         )
 
 
-@extend_schema(tags=["organization"])
+@extend_schema_view(
+    list=extend_schema(summary="Список приглашений", description="Возвращает приглашения текущей организации."),
+    create=extend_schema(summary="Создать приглашение", description="Отправляет приглашение на email с указанной ролью."),
+    destroy=extend_schema(summary="Отозвать приглашение", description="Переводит приглашение в статус REVOKED."),
+)
+@extend_schema(tags=["Приглашения"])
 class OrganizationInviteViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,

@@ -1,27 +1,22 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.http import JsonResponse
 from django.urls import URLPattern, URLResolver, include, path
+from rest_framework.permissions import AllowAny
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
 
-def health(request):
-    return JsonResponse({"status": "ok"})
-
-
 urlpatterns: list[URLPattern | URLResolver] = [
-    path("health/", health, name="health"),
     path(settings.ADMIN_PANEL_URL, admin.site.urls),
     path("api/v1/", include("apps.accounts.api.urls")),
     path("api/v1/organizations/", include("apps.organizations.api.urls")),
     path("api/v1/", include("apps.catalog.api.urls")),
     path("api/v1/orders/", include("apps.orders.api.urls")),
     path("api/v1/payments/", include("apps.payments.api.urls")),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/", SpectacularAPIView.as_view(permission_classes=[AllowAny]), name="schema"),
     path(
         "api/docs/swagger/",
         SpectacularSwaggerView.as_view(url_name="schema"),

@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from drf_spectacular.utils import extend_schema  # Импортируем декоратор для тегов
+from drf_spectacular.utils import OpenApiExample, extend_schema, extend_schema_view
 from rest_framework import permissions, status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.request import Request
@@ -28,18 +28,24 @@ from config.settings import base as settings
 User = get_user_model()
 
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Авторизация"])
 class CookieTokenObtainView(TokenObtainPairView):
     throttle_classes = [LoginRateThrottle]
     serializer_class = CustomTokenObtainPairSerializer
 
+    @extend_schema(
+        summary="Получить токены",
+        description="Вход по email и паролю. Вернёт access и данные пользователя; refresh сохранится в HttpOnly-cookie.",
+        examples=[OpenApiExample("Вход", value={"email": "buyer@example.com", "password": "StrongPass123!"}, request_only=True)],
+    )
     def post(self, request: Request, *args, **kwargs) -> Response:
         response = super().post(request, *args, **kwargs)
         return AuthService.set_refresh_token_cookie(response)
 
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Авторизация"])
 class CookieTokenRefreshView(TokenRefreshView):
+    @extend_schema(summary="Обновить access-токен", description="Берёт refresh из HttpOnly-cookie. В Swagger сначала выполните вход; cookie должна сохраниться в браузере.")
     def post(self, request: Request, *args, **kwargs) -> Response:
         cookie_name = settings.SIMPLE_JWT["AUTH_COOKIE"]
         refresh_token = request.COOKIES.get(cookie_name)
@@ -68,10 +74,11 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response
 
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Авторизация"])
 class LogoutAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(summary="Выйти из аккаунта", description="Отзывает refresh-токен и удаляет cookie. Требуется авторизация.")
     def post(self, request):
         cookie_name = settings.SIMPLE_JWT.get("AUTH_COOKIE", "refresh_token")
         refresh_token = request.COOKIES.get(cookie_name)
@@ -94,11 +101,12 @@ class LogoutAPIView(APIView):
             return Response({"detail": "Invalid or expired token."}, status=400)
 
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Восстановление пароля"])
 class RequestOTPAPIView(APIView):
     throttle_classes = [OTPRequestRateThrottle]
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Запросить код восстановления", description="Отправляет одноразовый код на email. Код понадобится на следующем шаге.", request=RequestOTPSerializer, examples=[OpenApiExample("Запрос кода", value={"email": "buyer@example.com"}, request_only=True)])
     def post(self, request):
         serializer = RequestOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -111,11 +119,12 @@ class RequestOTPAPIView(APIView):
         )
 
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Восстановление пароля"])
 class VerifyOTPAPIView(APIView):
     throttle_classes = [OTPVerifyRateThrottle]
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Подтвердить код", description="Проверяет OTP и возвращает reset_token. Передайте его в запрос смены пароля.", request=VerifyOTPSerializer, examples=[OpenApiExample("Проверка кода", value={"email": "buyer@example.com", "otp": "123456"}, request_only=True)])
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -133,10 +142,11 @@ class VerifyOTPAPIView(APIView):
         )
 
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Восстановление пароля"])
 class ResetPasswordAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Установить новый пароль", description="Использует reset_token из шага подтверждения. Пароли должны совпадать.", request=ResetPasswordSerializer, examples=[OpenApiExample("Новый пароль", value={"token": "<reset_token>", "new_password": "NewStrongPass123!", "confirm_password": "NewStrongPass123!"}, request_only=True)])
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -150,7 +160,11 @@ class ResetPasswordAPIView(APIView):
         )
 
 
-@extend_schema(tags=["users"])
+@extend_schema_view(
+    get=extend_schema(summary="Мой профиль", description="Возвращает профиль текущего пользователя."),
+    patch=extend_schema(summary="Обновить профиль", description="Обновляет имя, фамилию и аватар. Роль и организацию менять нельзя."),
+)
+@extend_schema(tags=["Профиль"])
 class MeAPIView(RetrieveUpdateAPIView):
     queryset = User.objects.all().select_related("organization")
     permission_classes = [permissions.IsAuthenticated]

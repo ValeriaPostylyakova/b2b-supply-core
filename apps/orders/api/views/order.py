@@ -2,8 +2,10 @@ from uuid import UUID
 
 from django.db.models import Q
 from drf_spectacular.utils import (
+    OpenApiExample,
     OpenApiResponse,
     extend_schema,
+    extend_schema_view,
     inline_serializer,
 )
 from rest_framework import permissions, serializers, status
@@ -31,7 +33,14 @@ from apps.organizations.api.permissions import (
 )
 
 
-@extend_schema(tags=["orders"])
+@extend_schema_view(
+    list=extend_schema(summary="Список заказов", description="Возвращает заказы, в которых текущая организация выступает покупателем или поставщиком."),
+    retrieve=extend_schema(summary="Карточка заказа", description="Возвращает заказ, состав позиций, цены и суммы."),
+    update=extend_schema(summary="Изменить заказ", description="Административное обновление заказа."),
+    partial_update=extend_schema(summary="Изменить заказ частично", description="Административное частичное обновление заказа."),
+    destroy=extend_schema(summary="Удалить заказ", description="Административное удаление заказа."),
+)
+@extend_schema(tags=["Заказы"])
 class OrderViewSet(ModelViewSet):
     queryset = (
         Order.objects.select_related("buyer", "supplier").all().order_by("-created_at")
@@ -78,6 +87,13 @@ class OrderViewSet(ModelViewSet):
             return OrderCreateSerializer
         return super().get_serializer_class()
 
+    @extend_schema(
+        summary="Создать заказ",
+        description="Доступно покупателю. Передайте supplier UUID и список позиций с product UUID, warehouse UUID и quantity. При создании система резервирует остатки.",
+        request=OrderCreateSerializer,
+        examples=[OpenApiExample("Новый заказ", value={"supplier": "<supplier_uuid>", "items": [{"product": "<product_uuid>", "warehouse": "<warehouse_uuid>", "quantity": 5}]}, request_only=True)],
+        responses={201: OpenApiResponse(response=OrderDetailSerializer, description="Заказ создан, остатки зарезервированы.")},
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -95,8 +111,8 @@ class OrderViewSet(ModelViewSet):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
-        summary="Отмена заказа",
-        description="Переводит заказ в статус CANCELLED и освобождает все связанные с ним резервы товаров на складах.",
+        summary="Отменить заказ",
+        description="Покупатель отменяет заказ. Статус станет CANCELLED, зарезервированные остатки будут освобождены.",
         request=None,
         responses={
             200: OpenApiResponse(
@@ -125,8 +141,8 @@ class OrderViewSet(ModelViewSet):
         return Response({"detail": "Заказ успешно отменен"}, status=status.HTTP_200_OK)
 
     @extend_schema(
-        summary="Подтверждение заказа",
-        description="Переводит заказ в статус CONFIRMED. Запускает дальнейшие B2B-процессы снабжения.",
+        summary="Подтвердить заказ",
+        description="Поставщик подтверждает заказ. Доступно для заказа в допустимом бизнес-статусе.",
         request=None, 
         responses={
             200: OpenApiResponse(
@@ -175,9 +191,11 @@ class OrderViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Заказы"])
 class OrderExistsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
+    @extend_schema(summary="Проверить доступ к заказу", description="200 — заказ существует и доступен текущей организации; 404 — не найден или нет доступа.")
     def get(self, request, external_id: UUID):
         order_exists = Order.objects.filter(
             Q(buyer=request.user.organization) | Q(supplier=request.user.organization),

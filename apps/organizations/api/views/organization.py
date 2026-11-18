@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions
 from rest_framework.generics import RetrieveUpdateAPIView
 
@@ -12,7 +12,11 @@ from apps.organizations.api.serializers import (
 from apps.organizations.models import Organization
 
 
-@extend_schema(tags=["organization"])
+@extend_schema_view(
+    get=extend_schema(summary="Моя организация", description="Возвращает организацию текущего пользователя."),
+    patch=extend_schema(summary="Обновить организацию", description="Обновляет доступные реквизиты. После изменения статус проверки сбрасывается в PENDING."),
+)
+@extend_schema(tags=["Организация"])
 class MyCompanyAPIView(RetrieveUpdateAPIView):
     queryset = Organization.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsActiveUserOrganization]

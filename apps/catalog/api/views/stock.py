@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.mixins import UpdateModelMixin
@@ -24,7 +24,12 @@ ALLOWED_ROLE_PERMISSIONS = (
 )
 
 
-@extend_schema(tags=["stock"])
+@extend_schema_view(
+    list=extend_schema(summary="Список остатков", description="Остатки товаров по складам организации. Доступен фильтр по доступным данным API."),
+    retrieve=extend_schema(summary="Остаток по позиции", description="Возвращает остаток конкретного товара на складе."),
+    partial_update=extend_schema(summary="Изменить количество", description="Передайте новое `quantity`, например `{\"quantity\": 25}`. `reserved_quantity` и `available_quantity` серверные поля и не изменяются вручную."),
+)
+@extend_schema(tags=["Остатки"])
 class StockViewSet(UpdateModelMixin, ReadOnlyModelViewSet):
     queryset = Stock.objects.all().select_related("warehouse")
     serializer_class = StockListSerializer

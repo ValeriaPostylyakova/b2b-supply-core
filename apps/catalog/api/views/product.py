@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiExample, extend_schema, extend_schema_view
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -22,7 +22,13 @@ from apps.catalog.selectors.product import ProductSelector
 from apps.organizations.api.permissions import IsSupplier, IsVerifyOrganization
 
 
-@extend_schema(tags=["product"])
+@extend_schema_view(
+    create=extend_schema(summary="Создать товар", description="Создаёт товар от имени организации-поставщика. Поставщик определяется по текущему пользователю.", examples=[OpenApiExample("Новый товар", value={"sku": "SKU-001", "name": "Кабель силовой", "price": "1250.00", "description": "Медный кабель"}, request_only=True)]),
+    update=extend_schema(summary="Изменить товар", description="Полностью обновляет доступные поля товара поставщика."),
+    partial_update=extend_schema(summary="Изменить товар частично", description="Обновляет переданные поля товара поставщика."),
+    destroy=extend_schema(summary="Архивировать товар", description="Деактивирует товар; физически запись не удаляется."),
+)
+@extend_schema(tags=["Товары"])
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductListSerializer
@@ -50,6 +56,7 @@ class ProductViewSet(ModelViewSet):
         selector = ProductSelector(self.queryset, self.request.user, self.action)
         return selector.get_optimized_queryset()
 
+    @extend_schema(summary="Список товаров", description="Постраничный каталог. Фильтры: `search` — поиск по названию/SKU; `min_price`, `max_price` — диапазон цены; `available=true|false` — наличие доступного остатка; `ordering=price|-price|name|-name|created_at|-created_at` — сортировка. Пример: `?search=кабель&available=true&min_price=100&ordering=price`.")
     def list(self, request, *args, **kwargs):
         cache_key = build_products_cache_key(request)
 
@@ -61,6 +68,7 @@ class ProductViewSet(ModelViewSet):
         cache.set(cache_key, response.data, timeout=300)
         return response
 
+    @extend_schema(summary="Карточка товара", description="Подробная карточка товара с остатками по складам.")
     def retrieve(self, request, *args, **kwargs):
         cache_key = product_detail_cache_key(kwargs["external_id"])
 

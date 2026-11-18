@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
-from rest_framework import permissions, status
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema, inline_serializer
+from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -13,13 +13,20 @@ from apps.payments.api.serializers import PaymentInitSerializer
 from apps.payments.services.yookassa_service import YookassaService
 
 
-@extend_schema(tags=["payment"])
+@extend_schema(tags=["Оплата"])
 class PaymentView(APIView):
     permission_classes = [
         permissions.IsAuthenticated,
         IsBuyerAdminOwner | IsBuyerManagerOwner,
     ]
 
+    @extend_schema(
+        summary="Создать платёж",
+        description="Создаёт платёжную сессию YooKassa для заказа в статусе RESERVED. Откройте confirmation_url, чтобы перейти к оплате.",
+        request=PaymentInitSerializer,
+        examples=[OpenApiExample("Оплата заказа", value={"order_id": "<order_uuid>"}, request_only=True)],
+        responses={201: OpenApiResponse(response=inline_serializer(name="PaymentInitResponse", fields={"confirmation_url": serializers.URLField()}), description="Ссылка на оплату.")},
+    )
     def post(self, request):
         serializer = PaymentInitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
