@@ -16,19 +16,19 @@ Backend B2B-платформы снабжения: поставщики публ
 
 Python 3.12 · Django 6 · Django REST Framework · PostgreSQL 16 · Celery · RabbitMQ · Redis · S3 (MinIO / Yandex Object Storage) · Docker Compose · pytest · drf-spectacular
 
-## Архитектура
+## Структура
 
-```mermaid
-flowchart LR
-    Client --> API[Django API<br/>gunicorn]
-    API --> PG[(PostgreSQL)]
-    API --> R[(Redis)]
-    API --> S3[(S3)]
-    API -- webhook --> YK[ЮKassa]
-    W[Celery worker] --> PG
-    W --> S3
-    B[Celery beat] --> W
-    W -- outbox --> MQ[[RabbitMQ]]
+```text
+apps/
+  accounts/       # Пользователи и аутентификация
+  organizations/  # Организации и приглашения
+  catalog/        # Каталог, склады, остатки и прайс-листы
+  orders/         # Заказы и резервирование
+  payments/       # Платежи и webhook-и
+  common/         # Общие компоненты и фоновые задачи
+config/
+  settings/       # Настройки local / test / prod
+  celery.py       # Конфигурация Celery
 ```
 
 Подробнее — в [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -64,17 +64,3 @@ docker compose exec django-server pytest
 ## Деплой
 
 Продакшен-сборка и инструкция — в [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
-
-## Структура
-
-```
-apps/
-  accounts/       пользователи, JWT, OTP
-  organizations/  организации, приглашения
-  catalog/        товары, склады, остатки, импорт прайс-листов
-  orders/         заказы, резервирование
-  payments/       ЮKassa, webhook
-  common/         outbox, рейт-лимиты, утилиты, seed
-config/           настройки (base / local / prod / test), Celery, URL
-docs/             архитектура и деплой
-```
