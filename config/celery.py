@@ -16,7 +16,6 @@ app.conf.beat_schedule = {
         "task": "organizations.clear_expired_invite",
         "schedule": crontab(hour=3, minute=0),
     },
-    
     "publish-outbox-events": {
         "task": "common.publish_outbox_events",
          "schedule": 5.0,
@@ -24,6 +23,6 @@ app.conf.beat_schedule = {
     },
     "clear_expired_reservation": {
         "task": "orders.clear_expired_reservation",
-         "schedule": crontab(minute=0),
+         "schedule": 600.0,
     }
 }
