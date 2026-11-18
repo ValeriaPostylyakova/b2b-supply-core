@@ -127,6 +127,9 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
+!.env.prod.example
 .venv
 env/
 venv/
@@ -165,3 +168,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Celery beat
+celerybeat-schedule*
+
+# Runtime
+staticfiles/
+media/

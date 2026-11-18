@@ -166,6 +166,19 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 CELERY_CACHE_BACKEND = "django-cache"
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_QUEUES = {
+    "default": {},
+    "high_priority": {},
+    "heavy_tasks": {},
+}
+CELERY_TASK_ROUTES = {
+    "catalog.process_price_list_import": {"queue": "heavy_tasks"},
+    "orders.generate_invoice": {"queue": "heavy_tasks"},
+}
+
+REDIS_URL = os.getenv("REDIS_URL")
+RABBITMQ_URL = os.getenv("RABBITMQ_URL")
 
 AWS_ACCESS_KEY_ID = os.getenv("S3_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("S3_SECRET")
@@ -215,7 +228,7 @@ STATIC_ROOT = BASE_DIR / os.getenv("STATIC_ROOT", default="staticfiles")
 
 MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_PUBLIC_BUCKET_NAME}/"
 
-FRONTEND_URL = "http://localhost:3000"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.yandex.ru")

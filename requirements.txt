@@ -105,4 +105,6 @@ webencodings==0.6.1
 wrapt==2.4.1
 yookassa==3.12.1
 zopfli==0.4.3
-aio_pika
+aio_pika==10.2.2
+gunicorn>=23.0.0
+whitenoise>=6.9.0

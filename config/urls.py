@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import URLPattern, URLResolver, include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -8,7 +9,12 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+def health(request):
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns: list[URLPattern | URLResolver] = [
+    path("health/", health, name="health"),
     path(settings.ADMIN_PANEL_URL, admin.site.urls),
     path("api/v1/", include("apps.accounts.api.urls")),
     path("api/v1/organizations/", include("apps.organizations.api.urls")),

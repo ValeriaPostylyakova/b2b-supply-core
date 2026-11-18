@@ -23,7 +23,7 @@ class AuthService:
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
                 value=refresh_token,
                 httponly=True,
-                secure=False,
+                secure=not settings.DEBUG,
                 samesite="Lax",
                 max_age=3600 * 24,
             )

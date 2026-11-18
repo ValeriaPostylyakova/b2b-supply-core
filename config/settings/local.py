@@ -15,26 +15,8 @@ DATABASES = {
     }
 }
 
-REDIS_URL = os.getenv("REDIS_URL")
-
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://core_redis_broker:6379/0")
-RABBITMQ_URL =  os.getenv("RABBITMQ_URL")
-
-CELERY_TASK_QUEUES = {
-    "default": {},
-    "high_priority": {},
-    "heavy_tasks": {},
-}
-
-
-CELERY_TASK_ROUTES = {
-    "catalog.process_price_list_import": {"queue": "heavy_tasks"},
-    "orders.generate_invoice": {"queue": "heavy_tasks"},
-}
-
-
-CELERY_TASK_DEFAULT_QUEUE = "default"
 
 STORAGES = {
     "default": {
