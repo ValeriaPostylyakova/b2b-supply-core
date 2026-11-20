@@ -1,47 +1,79 @@
-# Запуск: docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
-x-app: &app
-  build: .
-  image: b2b-supply-core:latest
-  env_file: .env.prod
+x-django-common: &django-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - .env.prod
+  environment:
+    - PYTHONUNBUFFERED=1
   restart: unless-stopped
-  depends_on:
-    db:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
-    rabbitmq:
-      condition: service_healthy
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "50m"
+      max-file: "5"
+  networks:
+    - default
+    - shared_rabbitmq_net
 
 services:
-  web:
-    <<: *app
+  migrations:
+    <<: *django-common
+    restart: "no"
     command: >
       sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
-             --workers 3 --graceful-timeout 10"
+             python manage.py collectstatic --noinput"
+    volumes:
+      - static_volume:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+
+  django-server:
+    <<: *django-common
     ports:
       - "127.0.0.1:8000:8000"
-    healthcheck:
-      test:
-        - CMD
-        - python
-        - -c
-        - "import os, urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/health/', headers={'Host': os.environ['ALLOWED_HOSTS'].split(',')[0]}))"
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
-
-  worker:
-    <<: *app
-    command: celery -A config worker -l info --concurrency=2 -Q high_priority,default,heavy_tasks
-
-  beat:
-    <<: *app
-    command: celery -A config beat -l info -s /tmp/celerybeat-schedule
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 60
+    volumes:
+      - static_volume:/app/staticfiles
     depends_on:
-      - worker
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  celery_worker:
+    <<: *django-common
+    command: celery -A config worker --loglevel=warning --concurrency=2 -Q high_priority,default,heavy_tasks --max-tasks-per-child=500
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  celery_beat:
+    <<: *django-common
+    command: celery -A config beat --loglevel=warning --pidfile=/tmp/celerybeat.pid
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  flower:
+    <<: *django-common
+    ports:
+      - "127.0.0.1:5555:5555"
+    command: celery -A config flower --port=5555 --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD}
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
 
   db:
     image: postgres:16-alpine
@@ -54,28 +86,37 @@ services:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   redis:
     image: redis:8.8-alpine
+    container_name: core_redis_broker
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
       timeout: 3s
       retries: 5
+    networks:
+      - default
+      - shared_rabbitmq_net
 
   rabbitmq:
-    image: rabbitmq:3.13-alpine
+    image: rabbitmq:3.13-management-alpine
+    container_name: core_rabbitmq_broker
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "127.0.0.1:15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -83,8 +124,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
+      - shared_rabbitmq_net
+
+  minio:
+    image: cr.yandex/mirror/minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - default
+      - shared_rabbitmq_net
 
 volumes:
   pg_data:
   redis_data:
   rabbitmq_data:
+  minio_data:
+  static_volume:
+
+networks:
+  shared_rabbitmq_net:
+    name: shared_rabbitmq_net
