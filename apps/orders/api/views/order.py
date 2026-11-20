@@ -182,11 +182,10 @@ class OrderViewSet(ModelViewSet):
                     name="OrderConfirmResponse",
                     fields={
                         "detail": serializers.CharField(
-                            default="Заказ успешно подтвержден"
+                            default="Заказ успешно подтвержден. Запущена генерация отчёта в фоновом режиме"
                         )
                     },
                 ),
-                description="Заказ успешно подтвержден",
             ),
             400: OpenApiResponse(
                 description="Ошибка валидации при подтверждении заказа"
@@ -203,7 +202,10 @@ class OrderViewSet(ModelViewSet):
 
         OrderService.confirm_order(order)
         return Response(
-            {"detail": "Заказ успешно подтвержден"}, status=status.HTTP_200_OK
+            {
+                "detail": "Заказ успешно подтвержден. Запущена генерация отчёта в фоновом режиме"
+            },
+            status=status.HTTP_200_OK,
         )
 
     @extend_schema(
