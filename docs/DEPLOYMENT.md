@@ -1,6 +1,6 @@
 # Деплой
 
-Схема: `reverse proxy (TLS)` → `web (gunicorn)`; рядом `worker`, `beat`, PostgreSQL, Redis, RabbitMQ. Файлы хранятся во внешнем S3.
+Схема: `reverse proxy (TLS)` → `django-server (gunicorn)`; рядом `worker`, `beat`, PostgreSQL, Redis, RabbitMQ. Файлы хранятся во внешнем S3.
 
 ## Требования
 
@@ -15,24 +15,11 @@
 cp .env.prod.example .env.prod
 ```
 
-Заполните `.env.prod`. Обязательно:
-
-| Переменная | Описание |
-|---|---|
-| `SECRET_KEY` | уникальный ключ (команда для генерации — в файле) |
-| `ALLOWED_HOSTS` | домены через запятую; первый — реальный домен (его использует healthcheck) |
-| `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS` | адреса API и фронтенда с `https://` |
-| `DB_*`, `RABBITMQ_*` | пароли БД и брокера; в `RABBITMQ_URL` и `CELERY_BROKER_URL` подставьте тот же пароль (спецсимволы — в URL-кодировке) |
-| `S3_*` | эндпоинт, ключи, имена бакетов |
-| `EMAIL_*`, `YOOKASSA_*`, `PAYMENT_RETURN_URL` | почта и платежи |
-
 ## 2. Запуск
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
-
-При старте `web` сам выполняет `migrate` и `collectstatic`. Статика отдаётся через WhiteNoise.
 
 Проверка:
 
@@ -58,7 +45,7 @@ location / {
 ## 4. Первичная настройка
 
 ```bash
-docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+docker compose -f docker-compose.prod.yml exec django-server python manage.py createsuperuser
 ```
 
 В личном кабинете ЮKassa укажите URL уведомлений: `https://api.example.com/api/v1/payments/ookassa/webhook/` (в маршруте именно `ookassa`).
